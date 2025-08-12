@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BitSoley Explorer — Explorer</title>
+
+<!-- Ethers & WalletConnect (UMD) -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg-1:#051022; --bg-2:#0a223d;
+    --accent-a:#00d4ff; --accent-b:#8a63ff;
+    --muted:#9fb6c9;
+    --glass: rgba(255,255,255,0.03);
+    --radius:14px;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    color: #eaf9ff;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg-1),var(--bg-2));-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  /* Canvas background */
+  #bg-canvas{ position:fixed; inset:0; width:100%; height:100%; z-index:-2; display:block; }
+  .bg-veil{ position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(800px 420px at 10% 12%, rgba(138,99,255,0.06), transparent),
+      radial-gradient(600px 360px at 88% 80%, rgba(0,212,255,0.04), transparent);
+    filter: blur(6px) saturate(1.05);
+  }
+
+  /* app container */
+  .app { max-width:1200px; margin:20px auto; padding:18px; position:relative; z-index:2; }
+
+  /* header */
+  .header {
+    display:flex; gap:12px; align-items:center; justify-content:space-between;
+    padding:14px; border-radius:var(--radius);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border:1px solid rgba(255,255,255,0.03);
+    box-shadow:0 12px 40px rgba(2,6,18,0.6); backdrop-filter: blur(8px);
+  }
+  .brand { font-weight:800; font-size:1.12rem; background:linear-gradient(90deg,var(--accent-a),var(--accent-b)); -webkit-background-clip:text; -webkit-text-fill-color:transparent;}
+  .small { color:var(--muted); font-size:13px; }
+
+  /* controls */
+  .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .input { min-width:240px; padding:10px 12px; border-radius:10px; background:transparent; border:1px solid rgba(255,255,255,0.03); color:inherit; }
+  .btn { padding:9px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); color:var(--accent-a); font-weight:700; cursor:pointer; }
+  .btn.primary { background: linear-gradient(90deg,var(--accent-a),var(--accent-b)); color:#051028; box-shadow:0 10px 30px rgba(31,145,255,0.08); }
+
+  /* summary */
+  .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:14px; }
+  .card { padding:14px; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); border:1px solid rgba(255,255,255,0.02); }
+  .stat { font-weight:800; font-size:18px; margin-top:8px; }
+
+  /* blocks */
+  .blocks-wrap { margin-top:12px; display:grid; gap:12px; }
+  .block-card {
+    display:flex; justify-content:space-between; gap:12px; align-items:center; padding:12px; border-radius:12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+    border:1px solid rgba(255,255,255,0.02); transition: transform .18s ease, box-shadow .18s ease, opacity .25s;
+    opacity:0; transform:translateY(10px);
+  }
+  .block-card.visible { opacity:1; transform:translateY(0); box-shadow: 0 12px 40px rgba(6,18,40,0.45); }
+  .pill { padding:8px 10px; border-radius:10px; background: linear-gradient(90deg,var(--accent-a),var(--accent-b)); color:#051026; font-weight:800; }
+  .mono { font-family: ui-monospace, monospace; color:#bfeff8; font-size:13px; word-break:break-all; }
+  .small-muted { font-size:13px; color:var(--muted); }
+
+  /* floating sidebar */
+  .sidebar { position:fixed; right:18px; top:120px; display:flex; flex-direction:column; gap:10px; z-index:4; }
+  .side-btn { width:72px; height:72px; border-radius:12px; display:flex;align-items:center;justify-content:center; cursor:pointer;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); border:1px solid rgba(255,255,255,0.03); color:var(--accent-a);
+  }
+  .side-btn:hover { transform:translateY(-6px); box-shadow:0 18px 60px rgba(0,212,255,0.06); }
+  @media (max-width:960px){ .summary { grid-template-columns:1fr; } .sidebar { right:12px; bottom:12px; top:auto; flex-direction:row; width:auto; padding:6px; } .side-btn{width:52px;height:52px;} .input{min-width:140px} }
+
+  /* subtle animations */
+  .fade-in { animation:fadeInUp .45s ease both; }
+  @keyframes fadeInUp { from { opacity:0; transform: translateY(10px) } to { opacity:1; transform: translateY(0) } }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div class="bg-veil" aria-hidden="true"></div>
+
+<div class="app" role="main">
+  <header class="header" role="banner">
+    <div>
+      <div class="brand">BitSoley Explorer</div>
+      <div class="small">RPC: <span id="rpcHost">—</span> · Chain: <span id="chainId">—</span></div>
+    </div>
+
+    <div class="controls" role="search">
+      <input id="searchInput" class="input" placeholder="Search tx / address / block (hash or number)" aria-label="Search" />
+      <button id="searchBtn" class="btn">Search</button>
+      <button id="connectBtn" class="btn primary" title="Connect wallet"><span id="connectLabel">Connect</span></button>
+    </div>
+  </header>
+
+  <div class="summary" role="region" aria-label="Summary">
+    <div class="card">
+      <div class="small-muted">Latest Block</div>
+      <div id="latestBlock" class="stat">—</div>
+    </div>
+    <div class="card">
+      <div class="small-muted">Node</div>
+      <div id="nodeStatus" class="stat">Connecting…</div>
+    </div>
+    <div class="card">
+      <div class="small-muted">Wallet</div>
+      <div id="walletStatus" class="stat">Not connected</div>
+    </div>
+  </div>
+
+  <section class="card" style="margin-top:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h3 style="margin:0">Latest Blocks</h3>
+      <div style="display:flex;gap:8px;">
+        <button id="prevPage" class="btn">Prev</button>
+        <button id="nextPage" class="btn">Next</button>
+      </div>
+    </div>
+
+    <div id="blocks" class="blocks-wrap" aria-live="polite" style="margin-top:12px">
+      <div class="small-muted">Loading blocks…</div>
+    </div>
+  </section>
+
+  <div id="detail" class="detail" style="margin-top:12px"></div>
+</div>
+
+<div class="sidebar" role="complementary" aria-label="Sidebar">
+  <div class="side-btn" id="addNetworkBtn" title="Add network to wallet">➕</div>
+  <a class="side-btn" href="https://bitsoley.com" target="_blank" rel="noopener" title="Main site">🌐</a>
+  <a class="side-btn" href="https://twitter.com/bitsoley" target="_blank" rel="noopener" title="Twitter">🐦</a>
+</div>
+
+<script>
+/* ============ CONFIG ============ */
+const RPC_BASE = 'https://rpc.bitsoley.com';
+const CHAIN_ID_DEC = 216721;
+const CHAIN_ID_HEX = '0x34e91';
+const SYMBOL = 'BSO';
+const PAGE_SIZE = 12;
+const POLL_MS = 6000;
+/* ================================= */
+
+const provider = new ethers.providers.JsonRpcProvider(RPC_BASE);
+
+/* DOM refs */
+const rpcHostEl = document.getElementById('rpcHost');
+const chainIdEl = document.getElementById('chainId');
+const latestBlockEl = document.getElementById('latestBlock');
+const nodeStatusEl = document.getElementById('nodeStatus');
+const walletStatusEl = document.getElementById('walletStatus');
+const blocksContainer = document.getElementById('blocks');
+const detailEl = document.getElementById('detail');
+const connectLabel = document.getElementById('connectLabel');
+
+rpcHostEl.innerText = (()=>{ try{return new URL(RPC_BASE).hostname}catch(e){return RPC_BASE}})();
+chainIdEl.innerText = CHAIN_ID_DEC;
+
+/* utility: convert various numeric types (BigNumber/string/number) to safe string */
+function toStringSafe(value){
+  if (value === null || value === undefined) return '0';
+  // ethers BigNumber
+  if (typeof value === 'object' && value._hex) {
+    try { return value.toString(); } catch(e){ return String(value); }
+  }
+  // BigInt
+  if (typeof value === 'bigint') return value.toString();
+  // number or numeric string
+  return String(value);
+}
+function toNumberSafe(value){
+  // only use when value is small enough to safely convert to Number
+  try {
+    const s = toStringSafe(value);
+    const n = Number(s);
+    return Number.isFinite(n) ? n : s;
+  } catch(e) { return String(value); }
+}
+
+/* base path so links work on GH pages */
+function getBasePath(){
+  const p = window.location.pathname;
+  if (p.startsWith('/explorer/')) return '/explorer';
+  if (p.startsWith('/block/') || p.startsWith('/tx/') || p.startsWith('/address/')) return '';
+  return '';
+}
+
+/* particles inline (lightweight) */
+(function particles(){
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let w = canvas.width = innerWidth, h = canvas.height = innerHeight;
+  let particles = [];
+  const N = Math.max(40, Math.round((w*h)/80000));
+  function init(){
+    particles = [];
+    for (let i=0;i<N;i++){
+      particles.push({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        r: 0.8 + Math.random()*2.6,
+        dx: (Math.random()-0.5)*0.02,
+        dy: (Math.random()-0.5)*0.02,
+        hue: 190 + Math.random()*70
+      });
+    }
+  }
+  init();
+  window.addEventListener('resize', ()=>{ w = canvas.width = innerWidth; h = canvas.height = innerHeight; init(); });
+
+  let last = performance.now();
+  function loop(now){
+    const dt = Math.min(60, now - last) * 0.06; last = now;
+    ctx.clearRect(0,0,w,h);
+    // soft gradient
+    const g=ctx.createLinearGradient(0,0,w,h); g.addColorStop(0,'rgba(0,0,0,0.06)'); g.addColorStop(1,'rgba(0,0,0,0.12)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+
+    // draw particles
+    for (let p of particles){
+      p.x += p.dx * dt * 16;
+      p.y += p.dy * dt * 16;
+      if (p.x < -60) p.x = w + 60; if (p.x > w + 60) p.x = -60;
+      if (p.y < -60) p.y = h + 60; if (p.y > h + 60) p.y = -60;
+
+      const grd = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,18);
+      grd.addColorStop(0, `hsla(${p.hue},95%,60%,${0.9})`);
+      grd.addColorStop(0.4, `hsla(${p.hue+20},95%,55%,0.26)`);
+      grd.addColorStop(1, 'rgba(10,12,30,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r*6,0, Math.PI*2); ctx.fill();
+    }
+
+    // link lines (sparse)
+    ctx.lineWidth = 0.6;
+    for (let i=0;i<particles.length;i++){
+      for (let j=i+1;j<particles.length;j++){
+        const a = particles[i], b = particles[j];
+        const dx = a.x-b.x, dy = a.y-b.y;
+        const d2 = dx*dx + dy*dy;
+        if (d2 < 10000){
+          const alpha = 0.12 * (1 - (d2/10000));
+          ctx.strokeStyle = `rgba(107,200,255,${alpha})`;
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+
+/* show block cards — called on load and on pagination */
+async function loadBlocks(startBlock = null){
+  try {
+    // get latest block number
+    const latest = await provider.getBlockNumber();
+    const latestNum = toNumberSafe(latest);
+    latestBlockEl.innerText = String(latestNum);
+    nodeStatusEl.innerText = 'Online';
+    if (startBlock === null) startBlock = latestNum;
+    // compute range
+    const from = startBlock;
+    const to = Math.max(0, startBlock - PAGE_SIZE + 1);
+
+    // fetch blocks in parallel with transactions summary
+    const fetches = [];
+    for (let b = from; b >= to; b--) {
+      fetches.push(provider.getBlockWithTransactions(b).catch((e) => { console.error('getBlockWithTransactions error for', b, e); return null; }));
+    }
+    const blocks = await Promise.all(fetches);
+
+    // render
+    blocksContainer.innerHTML = '';
+    let idx = 0;
+    for (const bl of blocks){
+      if (!bl) continue;
+      idx++;
+      const numStr = toStringSafe(bl.number);
+      const tsStr = bl.timestamp ? new Date(Number(toStringSafe(bl.timestamp))*1000).toLocaleString() : '—';
+      const txCount = Array.isArray(bl.transactions) ? bl.transactions.length : 0;
+      const miner = bl.miner || '—';
+      const hashShort = (bl.hash||'').slice(0,26) + '…';
+
+      const card = document.createElement('div');
+      card.className = 'block-card';
+      card.innerHTML = `
+        <div style="display:flex;gap:12px;align-items:center;min-width:0">
+          <div class="pill">#${numStr}</div>
+          <div style="min-width:0">
+            <div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${hashShort}</div>
+            <div class="small-muted" style="margin-top:6px">${txCount} tx · ${tsStr}</div>
+          </div>
+        </div>
+        <div style="text-align:right;min-width:220px">
+          <div class="mono">${shortAddr(miner)}</div>
+          <div style="margin-top:8px">
+            <button class="btn viewBlock" data-block="${encodeURIComponent(numStr)}">Open</button>
+            <button class="btn preview" style="margin-left:8px" data-block="${encodeURIComponent(numStr)}">Preview</button>
+          </div>
+        </div>
+      `;
+      blocksContainer.appendChild(card);
+      setTimeout(()=>card.classList.add('visible'), 70 * idx);
+
+      // handlers
+      card.querySelector('.viewBlock').addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        const n = ev.currentTarget.getAttribute('data-block');
+        window.location.href = `${getBasePath()}/block/?number=${n}`;
+      });
+      card.querySelector('.preview').addEventListener('click', async (ev)=>{
+        ev.stopPropagation();
+        const n = ev.currentTarget.getAttribute('data-block');
+        await showBlockPreview(n, bl);
+      });
+      card.addEventListener('click', ()=> {
+        window.location.href = `${getBasePath()}/block/?number=${numStr}`;
+      });
+    }
+  } catch (err) {
+    console.error('loadBlocks error:', err);
+    nodeStatusEl.innerText = 'Offline';
+    blocksContainer.innerHTML = `<div class="small-muted" style="color:#ff9b9b">Error loading blocks: ${err && err.message ? err.message : String(err)}</div>`;
+  }
+}
+
+/* small preview panel */
+async function showBlockPreview(n, preFetched=null){
+  try {
+    detailEl.innerHTML = `<div class="card small-muted">Loading block ${n}…</div>`;
+    let block = preFetched;
+    if (!block) block = await provider.getBlockWithTransactions(Number(n)).catch(e => { console.error('preview fetch error', e); return null; });
+    if (!block) { detailEl.innerHTML = `<div class="card" style="color:#ff9b9b">Block not found</div>`; return; }
+
+    const numStr = toStringSafe(block.number);
+    const ts = block.timestamp ? new Date(Number(toStringSafe(block.timestamp))*1000).toLocaleString() : '—';
+    const txCount = Array.isArray(block.transactions) ? block.transactions.length : 0;
+    const gasUsed = block.gasUsed ? toStringSafe(block.gasUsed) : '—';
+    const gasLimit = block.gasLimit ? toStringSafe(block.gasLimit) : '—';
+
+    const txHtml = (block.transactions && block.transactions.length) ?
+      block.transactions.slice(0,8).map(tx=>{
+        const v = toStringSafe(tx.value || '0');
+        const vHuman = (() => { try { return Number(ethers.utils.formatEther(v)).toFixed(6); } catch(e){ return '0'; } })();
+        return `<div style="padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+          <div style="min-width:0"><div class="mono">${tx.hash}</div><div class="small-muted" style="margin-top:6px">${shortAddr(tx.from)} → ${tx.to ? shortAddr(tx.to) : '—'}</div></div>
+          <div style="text-align:right"><div style="font-weight:800">${vHuman} ${SYMBOL}</div><div style="margin-top:6px"><button class="btn" onclick="window.location.href='${getBasePath()}/tx/?hash=${tx.hash}'">View</button></div></div>
+        </div>`;
+      }).join('') : '<div class="small-muted">No transactions</div>';
+
+    detailEl.innerHTML = `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:0">
+            <div class="small-muted">Block</div><div style="font-weight:800;margin-top:6px">${numStr}</div>
+            <div class="small-muted" style="margin-top:8px">Hash</div><div class="mono" style="margin-top:6px">${block.hash}</div>
+            <div class="small-muted" style="margin-top:8px">Timestamp</div><div style="margin-top:6px">${ts}</div>
+          </div>
+          <div style="width:260px;text-align:right">
+            <div class="small-muted">Miner</div><div class="mono" style="margin-top:6px">${block.miner}</div>
+            <div style="margin-top:8px"><button class="btn" onclick="navigator.clipboard.writeText('${block.hash}').then(()=>alert('Copied'))">Copy Hash</button>
+            <button class="btn" onclick="window.open('${window.location.origin + getBasePath()}/block/?number=${numStr}')">Open</button></div>
+          </div>
+        </div>
+        <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.04)" />
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <div class="small-muted">Gas Used<div style="font-weight:800;margin-top:6px">${gasUsed}</div></div>
+          <div class="small-muted">Gas Limit<div style="font-weight:800;margin-top:6px">${gasLimit}</div></div>
+          <div class="small-muted">Tx Count<div style="font-weight:800;margin-top:6px">${txCount}</div></div>
+        </div>
+        <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.04)" />
+        <div class="small-muted">Transactions</div>
+        <div style="margin-top:8px">${txHtml}</div>
+      </div>
+    `;
+  } catch (e) {
+    console.error('showBlockPreview error', e);
+    detailEl.innerHTML = `<div class="card" style="color:#ff9b9b">Error: ${e && e.message ? e.message : String(e)}</div>`;
+  }
+}
+
+/* search behavior */
+function handleSearch(q){
+  q = (q||'').trim();
+  if (!q) return;
+  if (/^\d+$/.test(q)) { window.location.href = `${getBasePath()}/block/?number=${q}`; return; }
+  if (/^0x[0-9a-fA-F]{64}$/.test(q)) { window.location.href = `${getBasePath()}/tx/?hash=${q}`; return; }
+  if (/^0x[0-9a-fA-F]{40}$/.test(q)) { window.location.href = `${getBasePath()}/address/?addr=${q}`; return; }
+  alert('Unsupported search format. Use block number, tx hash, or address.');
+}
+document.getElementById('searchBtn').addEventListener('click', ()=> handleSearch(document.getElementById('searchInput').value));
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleSearch(e.target.value); });
+
+/* pagination (simple) */
+let pageStart = null;
+document.getElementById('nextPage').addEventListener('click', async ()=>{
+  if (pageStart === null) return;
+  const candidate = Math.max(0, pageStart - PAGE_SIZE);
+  pageStart = candidate;
+  await loadBlocks(candidate);
+});
+document.getElementById('prevPage').addEventListener('click', async ()=>{
+  if (pageStart === null) return;
+  // we don't track latestKnown separately here; simply move forward
+  const candidate = Number(pageStart) + PAGE_SIZE;
+  pageStart = candidate;
+  await loadBlocks(candidate);
+});
+
+/* wallet connect (MetaMask + WalletConnect fallback) */
+let walletProvider = null, signer = null, walletAddress = null;
+async function connectWallet(){
+  if (window.ethereum){
+    try{
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      walletProvider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = walletProvider.getSigner();
+      walletAddress = await signer.getAddress();
+      connectLabel.innerText = shortAddr(walletAddress);
+      walletStatusEl.innerText = shortAddr(walletAddress);
+    }catch(e){ console.error('MetaMask connect error', e); alert('MetaMask connect failed: ' + (e.message||e)); }
+    return;
+  }
+  try{
+    const wc = new window.WalletConnectProvider.default({ rpc: { [CHAIN_ID_DEC]: RPC_BASE }, qrcode: true });
+    await wc.enable();
+    walletProvider = new ethers.providers.Web3Provider(wc);
+    signer = walletProvider.getSigner();
+    walletAddress = await signer.getAddress();
+    connectLabel.innerText = shortAddr(walletAddress);
+    walletStatusEl.innerText = shortAddr(walletAddress);
+    wc.on('disconnect', ()=>{ walletProvider=null; signer=null; walletAddress=null; connectLabel.innerText='Connect'; walletStatusEl.innerText='Not connected'; });
+  }catch(e){ console.error('WalletConnect error', e); alert('WalletConnect failed: '+(e.message||e)); }
+}
+document.getElementById('connectBtn').addEventListener('click', connectWallet);
+
+/* add network */
+async function addNetwork(){
+  if (!window.ethereum) return alert('Install MetaMask to add the network');
+  try{
+    await window.ethereum.request({
+      method:'wallet_addEthereumChain',
+      params:[{
+        chainId: CHAIN_ID_HEX,
+        chainName: 'BitSoley',
+        rpcUrls: [RPC_BASE],
+        nativeCurrency: { name: 'BitSoley', symbol: SYMBOL, decimals: 18 },
+        blockExplorerUrls: [ window.location.origin + getBasePath() ]
+      }]
+    });
+    alert('Network request sent to wallet');
+  }catch(e){ console.error('addNetwork error', e); alert('Add network failed: ' + (e && e.message ? e.message : String(e))); }
+}
+document.getElementById('addNetworkBtn').addEventListener('click', addNetwork);
+
+/* small helpers */
+function shortAddr(s){
+  if (!s) return '—';
+  if (s.length > 14) return s.slice(0,8) + '…' + s.slice(-6);
+  return s;
+}
+
+/* polling for new blocks */
+let pollHandle = null;
+function startPoll(){
+  if (pollHandle) return;
+  pollHandle = setInterval(async ()=>{
+    try{
+      const bn = await provider.getBlockNumber();
+      const nbn = Number(toStringSafe(bn));
+      // if new, reload blocks
+      if (typeof pageStart === 'number') {
+        if (nbn > pageStart) { pageStart = nbn; await loadBlocks(pageStart); }
+      } else {
+        pageStart = nbn;
+      }
+    }catch(e){ console.warn('poll error', e); nodeStatusEl.innerText = 'Offline'; }
+  }, POLL_MS);
+}
+function stopPoll(){ if (pollHandle){ clearInterval(pollHandle); pollHandle=null; } }
+
+/* boot on DOM ready */
+window.addEventListener('DOMContentLoaded', async ()=>{
+  try{
+    // initialize pageStart with latest block
+    const latest = await provider.getBlockNumber();
+    pageStart = Number(toStringSafe(latest));
+    await loadBlocks(pageStart);
+    startPoll();
+  }catch(err){
+    console.error('boot error', err);
+    blocksContainer.innerHTML = `<div class="small-muted" style="color:#ff9b9b">Startup error: ${err && err.message ? err.message : String(err)}</div>`;
+    nodeStatusEl.innerText = 'Offline';
+  }
+});
+</script>
+</body>
+</html>
