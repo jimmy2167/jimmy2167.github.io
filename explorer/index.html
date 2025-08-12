@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BitSoley Explorer — Home</title>
+
+<!-- icons + ethers + walletconnect -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+
+<style>
+:root{
+  --bg1:#030317; --bg2:#071431;
+  --accent1:#6bc8ff; --accent2:#9b63ff;
+  --glass: rgba(255,255,255,0.04);
+  --muted: #9fb8c8;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  color: #e8f8ff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:
+  radial-gradient(800px 400px at 10% 15%, rgba(155,99,255,0.06), transparent),
+  radial-gradient(700px 350px at 90% 85%, rgba(107,200,255,0.03), transparent),
+  linear-gradient(180deg,var(--bg1),var(--bg2)); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+
+.app {
+  max-width:1200px;margin:18px auto;padding:14px;display:grid;grid-template-columns:1fr;gap:14px;
+}
+
+/* header */
+.header {
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:1px solid rgba(255,255,255,0.03);backdrop-filter: blur(8px);
+}
+.brand { font-weight:800; font-size:1.25rem; background: linear-gradient(90deg,var(--accent1),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent;}
+.controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+/* inputs/buttons */
+.input { background:transparent; border:1px solid rgba(255,255,255,0.03); padding:10px 12px; color:inherit; border-radius:10px; min-width:220px }
+.btn { padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:var(--glass); color:var(--accent1); font-weight:700; cursor:pointer }
+.btn.primary { background: linear-gradient(90deg,var(--accent1),var(--accent2)); color:#071022; }
+
+/* grid summary */
+.summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.card {
+  padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:1px solid rgba(255,255,255,0.02);
+  box-shadow: 0 8px 30px rgba(5,8,20,0.6);
+}
+.small { font-size:13px;color:var(--muted); }
+
+/* blocks list */
+.blocks { display:grid; gap:10px; margin-top:6px; }
+.block {
+  display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+  border:1px solid rgba(255,255,255,0.02); cursor:pointer;
+}
+.block:hover { transform: translateY(-6px); box-shadow:0 12px 40px rgba(107,200,255,0.06); transition:all .16s; }
+.pill { padding:8px;border-radius:8px;font-weight:800;background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#041024; }
+
+/* detail */
+.detail { margin-top:10px; }
+
+/* responsive */
+@media (max-width:920px) {
+  .summary { grid-template-columns:1fr; }
+  .header { flex-direction:column; align-items:flex-start; gap:8px; }
+  .input { min-width:140px; }
+}
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div>
+        <div class="brand">🚀 BitSoley Explorer</div>
+        <div class="small">RPC: <span id="rpcHost">—</span> · Chain: <span id="chainId">—</span></div>
+      </div>
+
+      <div class="controls">
+        <input id="searchInput" class="input" placeholder="Search tx / address / block" />
+        <button id="searchBtn" class="btn">Search</button>
+        <button id="addNetworkBtn" class="btn">Add Network</button>
+        <button id="connectBtn" class="btn primary"><i class="fa fa-wallet"></i>&nbsp;<span id="connectLabel">Connect</span></button>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="card"><div class="small">Latest Block</div><div id="latestBlock" style="font-weight:800;font-size:20px">—</div></div>
+      <div class="card"><div class="small">Node</div><div id="nodeStatus" style="font-weight:800">Connecting…</div></div>
+      <div class="card"><div class="small">Wallet</div><div id="walletStatus" style="font-weight:800">Not connected</div></div>
+    </div>
+
+    <section class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Latest Blocks</h3>
+        <div style="display:flex;gap:8px">
+          <button id="prevPage" class="btn">Prev</button>
+          <button id="nextPage" class="btn">Next</button>
+        </div>
+      </div>
+      <div id="blocks" class="blocks" aria-live="polite" style="margin-top:12px">Loading blocks…</div>
+    </section>
+
+    <div id="detail" class="detail"></div>
+  </div>
+
+<script>
+/* CONFIG - update if needed */
+const RPC_BASE = 'https://rpc.bitsoley.com';
+const CHAIN_ID_DEC = 216721;
+const CHAIN_ID_HEX = '0x34e91';
+const SYMBOL = 'BSO';
+const PAGE_SIZE = 10;
+const POLL_MS = 6000;
+/* END CONFIG */
+
+const rpcHostEl = document.getElementById('rpcHost');
+rpcHostEl.innerText = (()=>{ try{return new URL(RPC_BASE).hostname}catch(e){return RPC_BASE}})();
+
+const provider = new ethers.providers.JsonRpcProvider(RPC_BASE);
+let walletProvider = null, signer = null, walletAddress = null;
+let latestKnown = 0, pageStart = 0, pollHandle = null;
+
+/* helpers */
+const short = s => s ? (s.slice(0,8) + '…' + s.slice(-6)) : '';
+const getBasePath = () => window.location.pathname.includes('/explorer/') ? '/explorer' : '';
+const toNumberSafe = v => { // v may be BigNumber or number or string
+  if (v === undefined || v === null) return 0;
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') { const n = Number(v); return isNaN(n)?v:n; }
+  if (v.toNumber) try { return v.toNumber(); } catch(e){ return Number(v.toString()); }
+  return Number(v);
+};
+
+/* JSON-RPC helper fallback (for raw calls if needed) */
+async function rpc(method, params=[]){
+  const res = await fetch(RPC_BASE, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({jsonrpc:'2.0', id:1, method, params})});
+  const j = await res.json(); if (j.error) throw new Error(j.error.message || JSON.stringify(j.error)); return j.result;
+}
+
+/* load block list */
+async function loadBlocks(startBlock=null){
+  try{
+    const bn = await provider.getBlockNumber();
+    latestKnown = toNumberSafe(bn); document.getElementById('latestBlock').innerText = latestKnown; document.getElementById('nodeStatus').innerText = 'Online';
+    if (startBlock === null) startBlock = latestKnown;
+    pageStart = startBlock;
+    const from = pageStart, to = Math.max(0, pageStart - PAGE_SIZE + 1);
+    const blocksEl = document.getElementById('blocks');
+    blocksEl.innerHTML = '';
+    // fetch blocks in parallel
+    const tasks = [];
+    for (let b = from; b >= to; b--) tasks.push(provider.getBlockWithTransactions(b).catch(()=>null));
+    const blks = await Promise.all(tasks);
+    for (const bl of blks){
+      if (!bl) continue;
+      const num = toNumberSafe(bl.number);
+      const ts = bl.timestamp ? new Date(toNumberSafe(bl.timestamp) * 1000).toLocaleString() : '—';
+      const hashShort = (bl.hash||'').slice(0,22) + '…';
+      const txCount = (bl.transactions && bl.transactions.length) ? bl.transactions.length : 0;
+      const row = document.createElement('div'); row.className = 'block';
+      row.innerHTML = `<div style="display:flex;gap:12px;align-items:center"><div class="pill">#${num}</div><div><div style="font-weight:800">${hashShort}</div><div class="small" style="margin-top:6px">${txCount} tx · ${ts}</div></div></div><div style="text-align:right"><div class="small mono">${bl.miner}</div><div style="margin-top:8px"><button class="btn viewBlock" data-block="${num}">View</button></div></div>`;
+      row.addEventListener('click', (e)=>{ if (e.target && e.target.classList && e.target.classList.contains('viewBlock')) return; window.location.href = `${getBasePath()}/block/${num}`; });
+      row.querySelector('button.viewBlock').addEventListener('click', (ev)=>{ ev.stopPropagation(); const n = ev.currentTarget.getAttribute('data-block'); window.location.href = `${getBasePath()}/block/${n}`; });
+      // insert tx preview
+      if (bl.transactions && bl.transactions.length){
+        const preview = document.createElement('div'); preview.style.marginTop = '8px';
+        preview.innerHTML = bl.transactions.slice(0,2).map(tx => `<div class="small">TX <a href="${getBasePath()}/tx/${tx.hash}">${tx.hash.slice(0,16)}…</a> ${ethers.utils.formatEther(tx.value || 0)} ${SYMBOL}</div>`).join('');
+        row.appendChild(preview);
+      }
+      blocksEl.appendChild(row);
+    }
+  }catch(err){
+    console.error('loadBlocks', err);
+    document.getElementById('nodeStatus').innerText = 'Offline';
+    document.getElementById('blocks').innerHTML = `<div class="card" style="color:#ff9b9b">Failed to load blocks: ${err.message}</div>`;
+  }
+}
+
+/* search */
+async function handleSearch(q){
+  q = (q||'').trim();
+  if (!q) return;
+  if (/^\d+$/.test(q)) { window.location.href = `${getBasePath()}/block/${q}`; return; }
+  if (/^0x[0-9a-fA-F]{64}$/.test(q)) { window.location.href = `${getBasePath()}/tx/${q}`; return; }
+  if (/^0x[0-9a-fA-F]{40}$/.test(q)) { window.location.href = `${getBasePath()}/address/${q}`; return; }
+  alert('Use block number, tx hash or address.');
+}
+
+/* wallet connect */
+async function connectWallet(){
+  if (window.ethereum){
+    try{
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      walletProvider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = walletProvider.getSigner();
+      walletAddress = await signer.getAddress();
+      document.getElementById('connectLabel').innerText = short(walletAddress);
+      document.getElementById('walletStatus').innerText = short(walletAddress);
+    }catch(e){ console.error('meta', e); alert('MetaMask failed: '+(e.message||e)); }
+    return;
+  }
+  // WalletConnect fallback
+  try{
+    const wc = new window.WalletConnectProvider.default({ rpc: { [CHAIN_ID_DEC]: RPC_BASE }, qrcode: true });
+    await wc.enable();
+    walletProvider = new ethers.providers.Web3Provider(wc);
+    signer = walletProvider.getSigner();
+    walletAddress = await signer.getAddress();
+    document.getElementById('connectLabel').innerText = short(walletAddress);
+    document.getElementById('walletStatus').innerText = short(walletAddress);
+    wc.on('disconnect', ()=>{ walletProvider=null; signer=null; walletAddress=null; document.getElementById('connectLabel').innerText='Connect'; document.getElementById('walletStatus').innerText='Not connected'; });
+  }catch(e){ console.error('wc', e); alert('WalletConnect failed: '+(e.message||e)); }
+}
+
+/* add network */
+async function addNetwork(){
+  if (!window.ethereum) return alert('Install MetaMask to add the network');
+  try{
+    await window.ethereum.request({
+      method:'wallet_addEthereumChain',
+      params:[{
+        chainId: CHAIN_ID_HEX,
+        chainName: 'BitSoley',
+        rpcUrls: [RPC_BASE],
+        nativeCurrency: { name: 'BitSoley', symbol: SYMBOL, decimals: 18 },
+        blockExplorerUrls: [ window.location.origin + getBasePath() ]
+      }]
+    });
+    alert('Network added (or wallet asked to switch)');
+  }catch(e){ console.error('addNetwork', e); alert('Add network failed: '+(e.message||e)); }
+}
+
+/* paging */
+document.getElementById('nextPage').addEventListener('click', async ()=> { const candidate = Math.max(0, pageStart - PAGE_SIZE); await loadBlocks(candidate); });
+document.getElementById('prevPage').addEventListener('click', async ()=> { const cand = Math.min(latestKnown, pageStart + PAGE_SIZE); await loadBlocks(cand); });
+
+/* wire events */
+document.getElementById('searchBtn').addEventListener('click', ()=> handleSearch(document.getElementById('searchInput').value));
+document.getElementById('searchInput').addEventListener('keydown', (e)=> { if (e.key === 'Enter') handleSearch(e.target.value); });
+document.getElementById('connectBtn').addEventListener('click', connectWallet);
+document.getElementById('addNetworkBtn').addEventListener('click', addNetwork);
+
+/* poller */
+function startPoll(){
+  if (pollHandle) return;
+  pollHandle = setInterval(async ()=>{
+    try{
+      const bn = await provider.getBlockNumber();
+      const nbn = toNumberSafe(bn);
+      if (nbn > latestKnown) await loadBlocks();
+      latestKnown = nbn;
+    }catch(e){ console.warn('poll', e); document.getElementById('nodeStatus').innerText = 'Offline'; }
+  }, POLL_MS);
+}
+
+(async function boot(){
+  await loadBlocks();
+  startPoll();
+})();
+</script>
+</body>
+</html>
