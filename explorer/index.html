@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BitSoley Explorer</title>
+<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+<style>
+/* Background & Font */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: radial-gradient(circle at top left, #060a1f, #0d1b3a, #05010e);
+  color: #fff;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background: rgba(10, 15, 44, 0.6);
+  backdrop-filter: blur(12px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+.sidebar h3 {
+  margin: 0;
+  font-size: 1.5em;
+  background: linear-gradient(90deg, #6bc8ff, #38f9d7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.sidebar a {
+  color: #6bc8ff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: 0.2s;
+}
+.sidebar a:hover {
+  color: #38f9d7;
+}
+.sidebar button {
+  padding: 10px;
+  background: linear-gradient(90deg, #6bc8ff, #38f9d7);
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.sidebar button:hover {
+  transform: scale(1.05);
+}
+
+/* Main content */
+.main {
+  flex: 1;
+  padding: 20px;
+}
+h2 {
+  font-size: 1.8em;
+  margin-bottom: 15px;
+  background: linear-gradient(90deg, #6bc8ff, #38f9d7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Cards */
+.card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 0 10px rgba(107, 200, 255, 0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 20px rgba(107, 200, 255, 0.4);
+}
+.card a {
+  color: #6bc8ff;
+  text-decoration: none;
+  font-weight: 500;
+}
+.card a:hover {
+  color: #38f9d7;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  body { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar h3 {
+    width: 100%;
+    text-align: center;
+  }
+  .main { padding: 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h3>BitSoley</h3>
+  <a href="https://bitsoley.com" target="_blank">🌐 Website</a>
+  <a href="https://twitter.com" target="_blank">🐦 Twitter</a>
+  <a href="https://t.me" target="_blank">💬 Telegram</a>
+  <a href="https://discord.com" target="_blank">🎮 Discord</a>
+  <button id="addNetworkBtn">Add to MetaMask</button>
+</div>
+
+<div class="main">
+  <h2>Latest Blocks</h2>
+  <div id="blocks"></div>
+</div>
+
+<script>
+const RPC_URL = 'https://rpc.bitsoley.com';
+const CHAIN_ID = 12345; // Replace with your real chain ID
+const CHAIN_NAME = 'BitSoley Chain';
+const SYMBOL = 'BTSY';
+const DECIMALS = 18;
+const EXPLORER_URL = window.location.origin;
+
+const web3 = new Web3(new Web3.providers.HttpProvider(RPC_URL));
+
+async function loadBlocks() {
+  try {
+    const latest = await web3.eth.getBlockNumber();
+    let html = '';
+    for (let i = 0; i < 10; i++) {
+      const block = await web3.eth.getBlock(latest - i, true);
+      html += `
+        <div class="card">
+          <strong>Block:</strong> <a href="/block/${block.number}">${block.number}</a><br>
+          <strong>Hash:</strong> ${block.hash}<br>
+          <strong>TX Count:</strong> ${block.transactions.length}<br>
+          ${block.transactions.slice(0, 3).map(tx => `
+            TX: <a href="/tx/${tx.hash}">${tx.hash.substring(0,20)}...</a><br>
+            From: <a href="/address/${tx.from}">${tx.from.substring(0,20)}...</a><br>
+            To: <a href="/address/${tx.to}">${tx.to ? tx.to.substring(0,20) : 'Contract Creation'}...</a><br><br>
+          `).join('')}
+        </div>
+      `;
+    }
+    document.getElementById('blocks').innerHTML = html;
+  } catch (err) {
+    document.getElementById('blocks').innerHTML = `<p style="color:red;">Error loading blocks: ${err.message}</p>`;
+  }
+}
+
+document.getElementById('addNetworkBtn').addEventListener('click', async () => {
+  if (window.ethereum) {
+    try {
+      await ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: '0x' + CHAIN_ID.toString(16),
+          chainName: CHAIN_NAME,
+          nativeCurrency: { name: SYMBOL, symbol: SYMBOL, decimals: DECIMALS },
+          rpcUrls: [RPC_URL],
+          blockExplorerUrls: [EXPLORER_URL]
+        }]
+      });
+    } catch (err) {
+      console.error('Error adding network:', err);
+    }
+  } else {
+    alert('MetaMask not detected');
+  }
+});
+
+loadBlocks();
+</script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BitSoley Explorer — Block</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+
+<style>
+:root{--bg1:#020217;--bg2:#061237;--accent1:#6bc8ff;--accent2:#38f9d7;--muted:#98adc0}
+html,body{height:100%;margin:0;background:radial-gradient(800px 400px at 10% 15%, rgba(180,0,255,0.04), transparent), linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;color:#e6f7ff}
+.shell{max-width:1100px;margin:18px auto;padding:16px}
+.header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.brand{font-weight:800;font-size:1.2rem;background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.controls{display:flex;gap:8px;align-items:center}
+.btn{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:rgba(255,255,255,0.04);color:var(--accent1);font-weight:700;cursor:pointer}
+.btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041226}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.02)}
+.mono{font-family:ui-monospace,monospace;color:#bfeff8}
+.small{font-size:13px;color:var(--muted)}
+@media(max-width:800px){ .header{flex-direction:column;align-items:flex-start} }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="header">
+      <div>
+        <div class="brand">BitSoley Explorer</div>
+        <div class="small">Block details • RPC: <span id="rpcHost">—</span></div>
+      </div>
+
+      <div class="controls">
+        <input id="goto" placeholder="block number or hash" style="padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit"/>
+        <button id="goBtn" class="btn primary">Go</button>
+        <button id="connectBtn" class="btn"><i class="fa fa-wallet"></i>&nbsp;<span id="connectLabel">Connect</span></button>
+        <button id="addNetworkBtn" class="btn">Add BitSoley</button>
+      </div>
+    </div>
+
+    <div id="card" class="card">
+      <div id="status" class="small">Loading block...</div>
+      <div id="blockArea" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+<script>
+/* CONFIG */
+const RPC_BASE = 'https://rpc.bitsoley.com';
+const CHAIN_ID_DEC = 216721;
+const CHAIN_ID_HEX = '0x34e91';
+const SYMBOL = 'BSO';
+/* END */
+
+document.getElementById('rpcHost').innerText = (()=>{ try{return new URL(RPC_BASE).hostname}catch(e){return RPC_BASE}})();
+
+let provider = new ethers.providers.JsonRpcProvider(RPC_BASE);
+let walletProvider = null, signer=null, walletAddress=null;
+const short = s => s ? (s.slice(0,8)+'…'+s.slice(-6)) : '';
+const getExplorerBase = () => (window.location.pathname.includes('/explorer/') ? '/explorer' : '');
+
+async function connectWallet(){
+  if (window.ethereum){
+    try{ await window.ethereum.request({method:'eth_requestAccounts'}); walletProvider = new ethers.providers.Web3Provider(window.ethereum); signer = walletProvider.getSigner(); walletAddress = await signer.getAddress(); document.getElementById('connectLabel').innerText = short(walletAddress); }catch(e){console.error(e);alert('MetaMask fail: '+(e.message||e)) }
+    return;
+  }
+  try{
+    const wc = new window.WalletConnectProvider.default({ rpc: { [CHAIN_ID_DEC]: RPC_BASE }, qrcode: true });
+    await wc.enable(); walletProvider = new ethers.providers.Web3Provider(wc); signer = walletProvider.getSigner(); walletAddress = await signer.getAddress(); document.getElementById('connectLabel').innerText = short(walletAddress);
+    wc.on('disconnect', ()=>{ walletProvider=null; signer=null; walletAddress=null; document.getElementById('connectLabel').innerText='Connect' });
+  }catch(e){ console.error(e); alert('WalletConnect failed: '+(e.message||e)) }
+}
+document.getElementById('connectBtn').addEventListener('click', connectWallet);
+
+document.getElementById('addNetworkBtn').addEventListener('click', async ()=>{
+  if (!window.ethereum) return alert('Install MetaMask');
+  try{
+    await window.ethereum.request({ method:'wallet_addEthereumChain', params:[{ chainId: CHAIN_ID_HEX, chainName:'BitSoley', rpcUrls:[RPC_BASE], nativeCurrency:{name:'BitSoley',symbol:SYMBOL,decimals:18}, blockExplorerUrls:[ window.location.origin + getExplorerBase() ] }]});
+    alert('Network added or switched');
+  }catch(e){ console.error(e); alert('Add network failed: '+(e.message||e)) }
+});
+
+/* path parsing */
+function extractBlockId(){
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  for (let i=0;i<parts.length;i++){
+    if (parts[i].toLowerCase()==='block' && parts[i+1]) return parts[i+1];
+  }
+  const last = parts[parts.length-1];
+  if (/^\d+$/.test(last) || /^0x[0-9a-fA-F]{64}$/.test(last)) return last;
+  return null;
+}
+
+document.getElementById('goBtn').addEventListener('click', ()=> {
+  const v = document.getElementById('goto').value.trim();
+  if (!v) return alert('Enter block number or hash');
+  showBlock(v);
+});
+
+async function showBlock(id){
+  try{
+    document.getElementById('status').innerText = 'Fetching block...';
+    let block = null;
+    if (/^\d+$/.test(String(id))) block = await provider.getBlock(Number(id), true);
+    else block = await provider.getBlock(id, true);
+    if (!block){ document.getElementById('status').innerText = 'Block not found.'; document.getElementById('blockArea').innerHTML=''; return; }
+    const time = block.timestamp ? new Date(block.timestamp*1000).toLocaleString() : '—';
+    const txList = block.transactions.map(tx => `<div style="padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center"><div><div class="mono">${tx.hash}</div><div class="small" style="margin-top:6px">${short(tx.from)} → ${tx.to?short(tx.to):'—'}</div></div><div style="text-align:right"><div style="font-weight:800">${ethers.utils.formatEther(tx.value)} ${SYMBOL}</div><div style="margin-top:6px"><button class="btn" onclick="window.location.href='${getExplorerBase()}/tx/${tx.hash}'">View</button></div></div></div>`).join('');
+    document.getElementById('blockArea').innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div class="small">Block</div><div style="font-weight:800;margin-top:6px">${block.number}</div>
+          <div class="small" style="margin-top:8px">Hash</div><div class="mono" style="margin-top:6px">${block.hash}</div>
+          <div class="small" style="margin-top:8px">Timestamp</div><div style="margin-top:6px">${time}</div>
+        </div>
+        <div style="width:260px;text-align:right">
+          <div class="small">Miner</div><div class="mono" style="margin-top:6px">${block.miner}</div>
+          <div style="margin-top:8px"><button class="btn" onclick="navigator.clipboard.writeText('${block.hash}').then(()=>alert('Copied'))">Copy Hash</button> <button class="btn" onclick="window.open('${window.location.origin + getExplorerBase()}/block/${block.number}')">Open</button></div>
+        </div>
+      </div>
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.04)"/>
+      <div class="small">Summary</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px">
+        <div class="small">Gas Used<div style="font-weight:800">${block.gasUsed}</div></div>
+        <div class="small">Gas Limit<div style="font-weight:800">${block.gasLimit}</div></div>
+        <div class="small">Tx Count<div style="font-weight:800">${block.transactions.length}</div></div>
+      </div>
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.04)"/>
+      <div class="small">Transactions</div>
+      <div style="margin-top:8px">${txList || '<div class="small">No transactions</div>'}</div>
+    `;
+    document.getElementById('status').innerText = '';
+  }catch(e){
+    console.error(e);
+    document.getElementById('status').innerText = 'Error: ' + (e.message||e);
+    document.getElementById('blockArea').innerHTML = '';
+  }
+}
+
+/* boot */
+(function boot(){
+  const id = extractBlockId();
+  if (id) { document.getElementById('goto').value = id; showBlock(id); }
+  else {
+    provider.getBlockNumber().then(n => document.getElementById('status').innerText = 'Latest block: ' + n + ' — enter a block number/hash to view').catch(()=>document.getElementById('status').innerText = 'Ready');
+  }
+})();
+</script>
+</body>
+</html>
