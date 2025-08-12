@@ -1,532 +1,189 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>BitSoley Explorer — Futuristic 2100 (Tokens, CSV, Share)</title>
-
-<!-- Fonts & icons -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<!-- Ethers v5 (UMD) -->
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<!-- WalletConnect v1 provider (UMD) -->
-<script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BitSoley Explorer</title>
+<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
 <style>
-:root{
-  --bg1:#020217; --bg2:#061237;
-  --accent1:#00f5ff; --accent2:#b400ff;
-  --muted:#98adc0;
-  font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-  color: #e6f7ff;
-  --card: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  --glass: rgba(255,255,255,0.03);
-  --radius: 12px;
-}
-html,body{height:100%;margin:0;background:
-  radial-gradient(800px 400px at 10% 15%, rgba(180,0,255,0.04), transparent),
-  radial-gradient(700px 350px at 90% 85%, rgba(0,245,255,0.03), transparent),
-  linear-gradient(180deg,var(--bg1),var(--bg2));
-  -webkit-font-smoothing:antialiased}
-.app{max-width:1200px;margin:16px auto;padding:12px;display:grid;grid-template-columns:76px 1fr;gap:16px;min-height:85vh}
-
-/* left rail */
-.rail{width:76px;background:var(--card);border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:12px;height:calc(100vh - 32px);position:sticky;top:16px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 12px 36px rgba(2,6,23,0.6)}
-.logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:900;color:#041426}
-.icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;border:1px solid rgba(255,255,255,0.03)}
-.icon:hover{transform:translateY(-6px);color:#fff;background:rgba(255,255,255,0.02);transition:all .12s}
-
-/* main */
-.main{min-height:80vh}
-.header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-.title{font-weight:800;font-size:20px}
-.small{font-size:13px;color:var(--muted)}
-.controls{display:flex;gap:8px;align-items:center}
-.input{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:10px 12px;border-radius:12px;color:inherit;outline:none;min-width:220px}
-.btn{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));color:var(--accent1);font-weight:700;cursor:pointer}
-.btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041226}
-
-/* summary */
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
-.card{background:var(--card);padding:14px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.02)}
-
-/* list */
-.blocks{display:grid;gap:10px}
-.block{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.02);cursor:pointer}
-.block:hover{transform:translateY(-6px);box-shadow:0 8px 30px rgba(0,0,0,0.45)}
-.left{display:flex;gap:12px;align-items:center}
-.pill{padding:8px;border-radius:10px;font-weight:800;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041426}
-.mono{font-family:ui-monospace,monospace;color:#bfeff8}
-
-/* detail */
-.detail{margin-top:12px}
-.panel{padding:12px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.02)}
-
-/* token page form */
-.form-row{display:flex;gap:8px;align-items:center}
-.form-row input{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;outline:none}
-
-/* bottom mobile nav */
-.mobile-nav{display:none}
-@media (max-width:920px){
-  .app{grid-template-columns:1fr; padding:12px}
-  .rail{position:fixed;left:12px;bottom:12px;width:auto;padding:8px;border-radius:20px;flex-direction:row;gap:8px;height:auto}
-  .main{padding-bottom:120px}
-  .grid{grid-template-columns:1fr}
-  .input{min-width:120px}
-  .mobile-nav{display:flex;position:fixed;right:12px;bottom:12px;gap:8px;z-index:80}
+/* Background & Font */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: radial-gradient(circle at top left, #060a1f, #0d1b3a, #05010e);
+  color: #fff;
+  display: flex;
+  min-height: 100vh;
 }
 
-/* small visual */
-.new-block{animation:glow 1.2s ease}
-@keyframes glow{0%{box-shadow:0 0 0 0 rgba(0,255,255,0)}50%{box-shadow:0 0 18px 6px rgba(0,255,255,0.06)}100%{box-shadow:0 0 0 0 rgba(0,255,255,0)}}
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background: rgba(10, 15, 44, 0.6);
+  backdrop-filter: blur(12px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+.sidebar h3 {
+  margin: 0;
+  font-size: 1.5em;
+  background: linear-gradient(90deg, #6bc8ff, #38f9d7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.sidebar a {
+  color: #6bc8ff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: 0.2s;
+}
+.sidebar a:hover {
+  color: #38f9d7;
+}
+.sidebar button {
+  padding: 10px;
+  background: linear-gradient(90deg, #6bc8ff, #38f9d7);
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.sidebar button:hover {
+  transform: scale(1.05);
+}
+
+/* Main content */
+.main {
+  flex: 1;
+  padding: 20px;
+}
+h2 {
+  font-size: 1.8em;
+  margin-bottom: 15px;
+  background: linear-gradient(90deg, #6bc8ff, #38f9d7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Cards */
+.card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 0 10px rgba(107, 200, 255, 0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 20px rgba(107, 200, 255, 0.4);
+}
+.card a {
+  color: #6bc8ff;
+  text-decoration: none;
+  font-weight: 500;
+}
+.card a:hover {
+  color: #38f9d7;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  body { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar h3 {
+    width: 100%;
+    text-align: center;
+  }
+  .main { padding: 10px; }
+}
 </style>
 </head>
 <body>
-  <div class="app" id="app">
-    <div class="rail" role="navigation" aria-label="Main">
-      <div class="logo">BS</div>
-      <div class="icon" id="navHome" title="Home"><i class="fa fa-house"></i></div>
-      <div class="icon" id="navBlocks" title="Blocks"><i class="fa fa-cubes"></i></div>
-      <div class="icon" id="navTx" title="Tx"><i class="fa fa-arrow-right-arrow-left"></i></div>
-      <div class="icon" id="navToken" title="Tokens"><i class="fa fa-coins"></i></div>
-      <div class="icon" id="navWallet" title="Wallet"><i class="fa fa-wallet"></i></div>
-    </div>
 
-    <main class="main" role="main">
-      <div class="header">
-        <div>
-          <div class="title">BitSoley Explorer</div>
-          <div class="small">Chain ID: <span id="chainId">—</span> · RPC: <span id="rpcHost">—</span></div>
-        </div>
+<div class="sidebar">
+  <h3>BitSoley</h3>
+  <a href="https://bitsoley.com" target="_blank">🌐 Website</a>
+  <a href="https://twitter.com" target="_blank">🐦 Twitter</a>
+  <a href="https://t.me" target="_blank">💬 Telegram</a>
+  <a href="https://discord.com" target="_blank">🎮 Discord</a>
+  <button id="addNetworkBtn">Add to MetaMask</button>
+</div>
 
-        <div class="controls">
-          <div class="search">
-            <input id="searchInput" class="input" placeholder="Search tx / address / block / token" />
-            <button id="searchBtn" class="btn" title="Search">Search</button>
-          </div>
-          <button id="liveToggle" class="btn" title="Live toggle">Live ON</button>
-          <button id="connectBtn" class="btn primary"><i class="fa fa-wallet"></i>&nbsp;<span id="connectLabel">Connect</span></button>
-        </div>
-      </div>
-
-      <div class="grid" id="summary">
-        <div class="card"><div class="small">Latest Block</div><div id="latestBlock" style="font-weight:800;font-size:20px">—</div></div>
-        <div class="card"><div class="small">Node</div><div id="nodeStatus" style="font-weight:800">Connecting…</div></div>
-        <div class="card"><div class="small">Wallet</div><div id="walletStatus" style="font-weight:800">Not connected</div></div>
-      </div>
-
-      <section id="blocksSection">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <h3 style="margin:0">Latest Blocks</h3>
-          <div style="display:flex;gap:8px">
-            <button class="btn" id="prevPage">Prev</button>
-            <button class="btn" id="nextPage">Next</button>
-          </div>
-        </div>
-        <div id="blocks" class="blocks" aria-live="polite">Loading blocks…</div>
-      </section>
-
-      <section id="txSection" style="display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <h3 style="margin:0">Transaction / Token Tools</h3>
-          <div style="display:flex;gap:8px">
-            <button class="btn" id="csvExportBtn">Export visible TX to CSV</button>
-            <button class="btn" id="shareBtn">Share</button>
-          </div>
-        </div>
-        <div id="txList" style="margin-top:10px"></div>
-      </section>
-
-      <section id="tokenSection" style="display:none">
-        <div class="card">
-          <h3>Token Explorer</h3>
-          <div class="form-row" style="margin-bottom:8px">
-            <input id="tokenAddr" placeholder="Token contract address (0x...)" style="flex:1"/>
-            <button id="tokenLookup" class="btn">Lookup Token</button>
-          </div>
-          <div class="form-row" style="margin-bottom:8px">
-            <input id="tokenAddressToCheck" placeholder="Address to check balance (or leave to use connected wallet)" style="flex:1"/>
-            <button id="tokenBalanceBtn" class="btn">Get Balance</button>
-          </div>
-          <div id="tokenInfo"></div>
-        </div>
-      </section>
-
-      <div id="detail" class="detail"></div>
-
-      <div class="card ad-area" id="adArea">
-        <div style="font-weight:700;margin-bottom:6px">Ad / Custom Script Area</div>
-        <div class="small">Drop HTML or tracking pixels here.</div>
-      </div>
-
-      <div style="height:18px"></div>
-      <div class="small" style="text-align:center;color:var(--muted)">Built for BitSoley • RPC: <span id="footerRpc">rpc.bitsoley.com</span></div>
-    </main>
-  </div>
-
-  <!-- mobile nav -->
-  <div class="mobile-nav" id="mobileNav" aria-hidden="true">
-    <div class="btn" id="mBlocks"><i class="fa fa-cubes"></i></div>
-    <div class="btn" id="mTx"><i class="fa fa-exchange-alt"></i></div>
-    <div class="btn" id="mTokens"><i class="fa fa-coins"></i></div>
-    <div class="btn" id="mWallet"><i class="fa fa-wallet"></i></div>
-  </div>
-
-  <!-- modal -->
-  <div id="modalBack" class="modal-back" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.7);z-index:80;align-items:center;justify-content:center;padding:12px">
-    <div id="modal" class="panel" style="max-width:900px;width:100%"></div>
-  </div>
+<div class="main">
+  <h2>Latest Blocks</h2>
+  <div id="blocks"></div>
+</div>
 
 <script>
-/* ================== CONFIG ================== */
-const RPC_BASE = 'https://rpc.bitsoley.com'; // change if needed
-const CHAIN_ID_DEC = 216721;
-const CHAIN_ID_HEX = '0x34e91';
-const SYMBOL = 'BSO';
-const PAGE_SIZE = 10;
-const POLL_MS = 6000;
-/* =========================================== */
+const RPC_URL = 'https://rpc.bitsoley.com';
+const CHAIN_ID = 12345; // Replace with your real chain ID
+const CHAIN_NAME = 'BitSoley Chain';
+const SYMBOL = 'BTSY';
+const DECIMALS = 18;
+const EXPLORER_URL = window.location.origin;
 
-/* DOM */
-const blocksEl = document.getElementById('blocks');
-const detailEl = document.getElementById('detail');
-const latestBlockEl = document.getElementById('latestBlock');
-const nodeStatusEl = document.getElementById('nodeStatus');
-const walletStatusEl = document.getElementById('walletStatus');
-const connectLabel = document.getElementById('connectLabel');
-const rpcHostEl = document.getElementById('rpcHost');
-const footerRpcEl = document.getElementById('footerRpc');
+const web3 = new Web3(new Web3.providers.HttpProvider(RPC_URL));
 
-try{ rpcHostEl.innerText = new URL(RPC_BASE).hostname; footerRpcEl.innerText = new URL(RPC_BASE).hostname }catch(e){}
-
-/* providers */
-let provider = new ethers.providers.JsonRpcProvider(RPC_BASE);
-let web3Provider = null, signer = null, walletAddress = null;
-
-/* state */
-let latestKnown = 0, pageStart = 0, pollHandle = null, live = true;
-
-/* helpers */
-const short = s => s ? (s.slice(0,6) + '…' + s.slice(-4)) : '';
-const bnFromHex = h => h ? Number(ethers.BigNumber.from(h).toString()) : 0;
-const hexVal = n => ethers.utils.hexValue(n);
-const fmtEth = v => { try{ return Number(ethers.utils.formatEther(ethers.BigNumber.from(v))).toFixed(6); } catch(e) { return '0'; } };
-
-/* JSON-RPC helper */
-async function rpc(method, params=[]){
-  const t0 = performance.now();
-  const res = await fetch(RPC_BASE, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({jsonrpc:'2.0', id:1, method, params})});
-  const t1 = performance.now();
-  nodeStatusEl.title = Math.round(t1-t0) + ' ms';
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const j = await res.json(); if (j.error) throw new Error(j.error.message || JSON.stringify(j.error)); return j.result;
-}
-
-/* ---------- blocks listing ---------- */
-async function loadBlocks(startBlock=null){
-  try{
-    const bnHex = await rpc('eth_blockNumber'); const bn = bnFromHex(bnHex);
-    latestKnown = bn; latestBlockEl.innerText = bn; nodeStatusEl.innerText = 'Online';
-    if (startBlock === null) startBlock = bn;
-    pageStart = startBlock;
-    const from = pageStart, to = Math.max(0, pageStart - PAGE_SIZE + 1);
-    const tasks = [];
-    for (let b=from;b>=to;b--) tasks.push(rpc('eth_getBlockByNumber', [hexVal(b), false]).catch(()=>null));
-    const blocks = await Promise.all(tasks);
-    blocksEl.innerHTML = '';
-    for (const bl of blocks){
-      if (!bl) continue;
-      const num = bnFromHex(bl.number);
-      const row = document.createElement('div'); row.className = 'block';
-      row.innerHTML = `<div class="left"><div class="pill">#${num}</div><div style="margin-left:10px"><div style="font-weight:800">${short(bl.hash)}</div><div class="small" style="margin-top:6px">${(bl.transactions && bl.transactions.length) || 0} tx · miner ${short(bl.miner)}</div></div></div><div class="right"><div class="mono">${bnFromHex(bl.gasUsed||'0x0')} gas</div><div style="margin-top:8px"><button class="btn" data-block="${num}">View</button></div></div>`;
-      row.addEventListener('click', ()=>{ history.pushState({view:'block',block:num},'',`/explorer/block/${num}`); showBlock(num); });
-      row.querySelector('button[data-block]').addEventListener('click', (ev)=>{ ev.stopPropagation(); const n = ev.currentTarget.getAttribute('data-block'); history.pushState({view:'block',block:n},'',`/explorer/block/${n}`); showBlock(Number(n)); });
-      blocksEl.appendChild(row);
+async function loadBlocks() {
+  try {
+    const latest = await web3.eth.getBlockNumber();
+    let html = '';
+    for (let i = 0; i < 10; i++) {
+      const block = await web3.eth.getBlock(latest - i, true);
+      html += `
+        <div class="card">
+          <strong>Block:</strong> <a href="/block/${block.number}">${block.number}</a><br>
+          <strong>Hash:</strong> ${block.hash}<br>
+          <strong>TX Count:</strong> ${block.transactions.length}<br>
+          ${block.transactions.slice(0, 3).map(tx => `
+            TX: <a href="/tx/${tx.hash}">${tx.hash.substring(0,20)}...</a><br>
+            From: <a href="/address/${tx.from}">${tx.from.substring(0,20)}...</a><br>
+            To: <a href="/address/${tx.to}">${tx.to ? tx.to.substring(0,20) : 'Contract Creation'}...</a><br><br>
+          `).join('')}
+        </div>
+      `;
     }
-  } catch(err){
-    console.error('loadBlocks',err);
-    nodeStatusEl.innerText = 'Offline';
-    blocksEl.innerHTML = `<div style="color:#ff9b9b">Failed to load blocks: ${err.message}</div>`;
+    document.getElementById('blocks').innerHTML = html;
+  } catch (err) {
+    document.getElementById('blocks').innerHTML = `<p style="color:red;">Error loading blocks: ${err.message}</p>`;
   }
 }
 
-/* ---------- block details ---------- */
-async function showBlock(identifier){
-  try{
-    const block = (/^0x/.test(String(identifier))) ? await rpc('eth_getBlockByHash', [identifier, true]) : await rpc('eth_getBlockByNumber', [hexVal(Number(identifier)), true]);
-    if (!block){ detailEl.style.display='block'; detailEl.innerHTML = '<div class="panel">Block not found</div>'; return; }
-    let txHtml = '';
-    if (block.transactions && block.transactions.length>0){
-      for (const tx of block.transactions){
-        txHtml += `<div class="tx-item"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="mono">${tx.hash}</div><div class="small">${short(tx.from)} → ${tx.to?short(tx.to):'—'}</div></div><div style="text-align:right"><div style="font-weight:800">${fmtEth(tx.value)} ${SYMBOL}</div><div style="margin-top:8px"><button class="btn" data-tx="${tx.hash}">View</button></div></div></div></div>`;
-      }
-    } else txHtml = '<div class="mono">No transactions</div>';
-    detailEl.style.display='block';
-    detailEl.innerHTML = `<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:800;font-size:16px">Block #${bnFromHex(block.number)}</div><div class="mono" style="margin-top:6px">${block.hash}</div></div><div style="text-align:right"><div class="mono">Gas used: ${bnFromHex(block.gasUsed||'0x0')}</div><div style="margin-top:8px"><button class="btn" id="copyBlock" data-copy="${block.hash}">Copy Hash</button>&nbsp;<button class="btn" id="openBlockExtern">Open on BitSoley</button></div></div></div><hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.04)"/>${txHtml}</div>`;
-    // wire tx buttons + copy
-    detailEl.querySelectorAll('button[data-tx]').forEach(b=> b.addEventListener('click', (ev)=>{ const tx = ev.currentTarget.getAttribute('data-tx'); history.pushState({view:'tx',tx},'',`/explorer/tx/${tx}`); showTx(tx); }));
-    document.getElementById('copyBlock').addEventListener('click', (e)=>{ const v = e.currentTarget.getAttribute('data-copy'); navigator.clipboard.writeText(v).then(()=>alert('Block hash copied')); });
-    document.getElementById('openBlockExtern').addEventListener('click', ()=> window.open(`https://bitsoley.com/explorer/block/${bnFromHex(block.number)}`));
-  }catch(e){
-    console.error('showBlock',e);
-    detailEl.style.display='block';
-    detailEl.innerHTML = `<div class="panel" style="color:#ff9b9b">Error: ${e.message}</div>`;
-  }
-}
-
-/* ---------- tx details + ERC20 decode ---------- */
-const ERC20_ABI = [
-  "function name() view returns (string)",
-  "function symbol() view returns (string)",
-  "function decimals() view returns (uint8)",
-  "function balanceOf(address) view returns (uint256)",
-  "event Transfer(address indexed from, address indexed to, uint256 value)"
-];
-
-async function showTx(txHash){
-  try{
-    const tx = await rpc('eth_getTransactionByHash', [txHash]);
-    if (!tx){ detailEl.style.display='block'; detailEl.innerHTML = '<div class="panel">TX not found</div>'; return; }
-    const receipt = await rpc('eth_getTransactionReceipt', [txHash]);
-    let logsHtml = '';
-    if (receipt && receipt.logs && receipt.logs.length>0){
-      const iface = new ethers.utils.Interface(ERC20_ABI);
-      for (const l of receipt.logs){
-        let parsed = null;
-        try{ parsed = iface.parseLog({ topics: l.topics, data: l.data }); }catch(e){}
-        if (parsed && parsed.name === 'Transfer'){
-          const from = parsed.args.from; const to = parsed.args.to; const value = parsed.args.value;
-          let sym = l.address; let dec = 18;
-          try{ const quick = new ethers.Contract(l.address, ERC20_ABI, new ethers.providers.JsonRpcProvider(RPC_BASE)); sym = await quick.symbol(); dec = await quick.decimals(); }catch(e){}
-          const human = Number(value.toString()) / Math.pow(10, Number(dec||18));
-          logsHtml += `<div class="tx-item"><div><strong>ERC20</strong> <span class="mono">${l.address}</span><div class="small">${short(from)} → ${short(to)} · ${human} ${sym}</div></div></div>`;
-        } else {
-          logsHtml += `<div class="tx-item"><div class="mono">Log: ${l.address} topics ${l.topics.length}</div></div>`;
-        }
-      }
-    } else logsHtml = '<div class="mono">No logs</div>';
-    detailEl.style.display='block';
-    detailEl.innerHTML = `<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:800">Transaction</div><div class="mono" style="margin-top:6px">${tx.hash}</div></div><div style="text-align:right"><div class="mono">Status: ${receipt ? (receipt.status==='0x1' || receipt.status===1 ? 'Success' : 'Fail') : 'Pending'}</div><div style="margin-top:8px"><button class="btn" id="copyTx" data-copy="${tx.hash}">Copy TX</button>&nbsp;<button class="btn" id="openTxExtern">Open on BitSoley</button></div></div></div><hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.04)"/><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><div class="small">From</div><div class="mono">${tx.from}</div></div><div><div class="small">To</div><div class="mono">${tx.to || '—'}</div></div></div><div style="margin-top:12px"><div class="small">Value</div><div style="font-weight:800">${fmtEth(tx.value)} ${SYMBOL}</div></div><div style="margin-top:12px"><div class="small">Logs</div>${logsHtml}</div></div>`;
-    document.getElementById('copyTx').addEventListener('click', (e)=>{ navigator.clipboard.writeText(e.currentTarget.getAttribute('data-copy')).then(()=>alert('Copied TX hash')) });
-    document.getElementById('openTxExtern').addEventListener('click', ()=> window.open(`https://bitsoley.com/explorer/tx/${txHash}`));
-  }catch(e){
-    console.error('showTx',e);
-    detailEl.style.display='block';
-    detailEl.innerHTML = `<div class="panel" style="color:#ff9b9b">Error: ${e.message}</div>`;
-  }
-}
-
-/* ---------- token page (info + balance) ---------- */
-async function lookupToken(tokenAddr){
-  tokenAddr = (tokenAddr||'').trim();
-  if (!/^0x[0-9a-fA-F]{40}$/.test(tokenAddr)){ alert('Invalid token address'); return; }
-  try{
-    const contract = new ethers.Contract(tokenAddr, ERC20_ABI, new ethers.providers.JsonRpcProvider(RPC_BASE));
-    const name = await contract.name().catch(()=>null);
-    const symbol = await contract.symbol().catch(()=>null);
-    const decimals = await contract.decimals().catch(()=>18);
-    // totalSupply best-effort
-    let total = null;
-    try{ total = await contract.totalSupply(); }catch(e){}
-    const totalHuman = total ? Number(total.toString())/Math.pow(10, Number(decimals||18)) : '—';
-    document.getElementById('tokenInfo').innerHTML = `<div style="font-weight:800">${name || 'Token'} <span class="mono">${symbol || ''}</span></div>
-      <div class="small">Contract: <span class="mono">${tokenAddr}</span></div>
-      <div style="margin-top:8px">Decimals: ${decimals} · Total supply: ${totalHuman}</div>
-      <div style="margin-top:10px"><button class="btn" id="copyToken" data-copy="${tokenAddr}">Copy Contract</button>
-        &nbsp;<button class="btn" id="trackToken">Track token</button></div>`;
-    document.getElementById('copyToken').addEventListener('click',(e)=>{ navigator.clipboard.writeText(e.currentTarget.getAttribute('data-copy')).then(()=>alert('Copied')); });
-    document.getElementById('trackToken').addEventListener('click', ()=>{ history.pushState({view:'token', token:tokenAddr},'',`/explorer/token/${tokenAddr}`); showToken(tokenAddr); });
-  }catch(e){
-    console.error('lookupToken',e); alert('Failed to fetch token info: '+ (e.message||e));
-  }
-}
-
-async function showToken(tokenAddr){
-  tokenAddr = tokenAddr.trim();
-  if (!/^0x[0-9a-fA-F]{40}$/.test(tokenAddr)){ alert('Invalid token address'); return; }
-  // show token info quick
-  document.getElementById('tokenInfo').innerHTML = '<div class="small">Loading token...</div>';
-  try{
-    const contract = new ethers.Contract(tokenAddr, ERC20_ABI, new ethers.providers.JsonRpcProvider(RPC_BASE));
-    const [name, symbol, decimals] = await Promise.all([contract.name().catch(()=>null), contract.symbol().catch(()=>null), contract.decimals().catch(()=>18)]);
-    let addressToCheck = document.getElementById('tokenAddressToCheck').value.trim();
-    if (!addressToCheck && walletAddress) addressToCheck = walletAddress;
-    const balanceHuman = addressToCheck ? (await contract.balanceOf(addressToCheck).then(b=> Number(b.toString())/Math.pow(10,decimals)).catch(()=>null)) : null;
-    document.getElementById('tokenInfo').innerHTML = `<div style="font-weight:800">${name || 'Token'} <span class="mono">${symbol || ''}</span></div>
-      <div class="small">Contract: <span class="mono">${tokenAddr}</span></div>
-      <div style="margin-top:8px">${decimals} decimals</div>
-      <div style="margin-top:10px">${ addressToCheck ? `<div>Balance of <span class="mono">${short(addressToCheck)}</span>: <strong>${balanceHuman !== null ? balanceHuman : 'N/A'}</strong> ${symbol || ''}</div>` : '<div class="small">Enter an address to check balance or connect wallet.</div>' }</div>`;
-  }catch(e){
-    console.error('showToken',e); document.getElementById('tokenInfo').innerHTML = `<div class="small" style="color:#ff9b9b">Token query failed: ${e.message}</div>`;
-  }
-}
-
-/* ---------- CSV export (visible tx in detail or blocks) ---------- */
-function exportTxsToCSV(rows, filename='tx_export.csv'){
-  // rows: array of objects {hash, from, to, value, blockNumber}
-  const header = ['hash','from','to','value','blockNumber'];
-  const csv = [header.join(',')].concat(rows.map(r => header.map(h => `"${String(r[h]||'')}"`).join(','))).join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-}
-
-/* ---------- search handling ---------- */
-async function handleSearch(q){
-  q = (q||'').trim();
-  if (!q) return;
-  if (/^\d+$/.test(q)){ history.pushState({view:'block', block:q},'',`/explorer/block/${q}`); return showBlock(Number(q)); }
-  if (/^0x[0-9a-fA-F]{64}$/.test(q)){ history.pushState({view:'tx', tx:q},'',`/explorer/tx/${q}`); return showTx(q); }
-  if (/^0x[0-9a-fA-F]{40}$/.test(q)){ // address - show balance and token balances
-    try{
-      const bal = await rpc('eth_getBalance', [q, 'latest']);
-      detailEl.style.display='block';
-      detailEl.innerHTML = `<div class="panel"><div style="font-weight:800">Address ${short(q)}</div><div style="margin-top:8px">Native balance: <strong>${fmtEth(bal)} ${SYMBOL}</strong></div><div style="margin-top:8px"><button class="btn" id="copyAddr" data-copy="${q}">Copy Address</button>&nbsp;<button class="btn" id="openAddr">Open on BitSoley</button></div></div>`;
-      document.getElementById('copyAddr').addEventListener('click', (e)=> navigator.clipboard.writeText(e.currentTarget.getAttribute('data-copy')).then(()=>alert('Copied')) );
-      document.getElementById('openAddr').addEventListener('click', ()=> window.open(`https://bitsoley.com/explorer/address/${q}`));
-    }catch(e){ alert('Address lookup failed: ' + e.message); }
-    return;
-  }
-  // token contract input
-  if (/^0x[0-9a-fA-F]{40}$/.test(q)) { // same as above; handled
-    return;
-  }
-  alert('Unsupported search format. Use block number, tx hash, or address.');
-}
-
-/* ---------- Wallet connect (MetaMask + WalletConnect v1) ---------- */
-const connectBtn = document.getElementById('connectBtn');
-connectBtn.addEventListener('click', async ()=>{
-  if (window.ethereum){
-    try{
-      await window.ethereum.request({method:'eth_requestAccounts'});
-      web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = web3Provider.getSigner();
-      walletAddress = await signer.getAddress();
-      walletStatusEl.innerText = short(walletAddress);
-      connectLabel.innerText = short(walletAddress);
-    }catch(e){ console.error('meta',e); alert('MetaMask failed: ' + (e.message||e)) }
+document.getElementById('addNetworkBtn').addEventListener('click', async () => {
+  if (window.ethereum) {
+    try {
+      await ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: '0x' + CHAIN_ID.toString(16),
+          chainName: CHAIN_NAME,
+          nativeCurrency: { name: SYMBOL, symbol: SYMBOL, decimals: DECIMALS },
+          rpcUrls: [RPC_URL],
+          blockExplorerUrls: [EXPLORER_URL]
+        }]
+      });
+    } catch (err) {
+      console.error('Error adding network:', err);
+    }
   } else {
-    try{
-      const wc = new window.WalletConnectProvider.default({ rpc:{ [CHAIN_ID_DEC]: RPC_BASE }, qrcode: true });
-      await wc.enable();
-      web3Provider = new ethers.providers.Web3Provider(wc);
-      signer = web3Provider.getSigner();
-      walletAddress = await signer.getAddress();
-      walletStatusEl.innerText = short(walletAddress);
-      connectLabel.innerText = short(walletAddress);
-      wc.on('disconnect', ()=>{ web3Provider=null; signer=null; walletAddress=null; walletStatusEl.innerText='Not connected'; connectLabel.innerText='Connect'; });
-    }catch(e){ console.error('wc',e); alert('WalletConnect failed: ' + (e.message||e)) }
+    alert('MetaMask not detected');
   }
 });
 
-/* ---------- polling and pagination ---------- */
-async function startPoll(){
-  if (pollHandle) return;
-  pollHandle = setInterval(async ()=>{
-    try{
-      const bn = bnFromHex(await rpc('eth_blockNumber'));
-      if (bn > latestKnown) await loadBlocks();
-      latestKnown = bn;
-    }catch(e){ console.warn('poll', e); nodeStatusEl.innerText = 'Offline'; }
-  }, POLL_MS);
-}
-function stopPoll(){ if (!pollHandle) return; clearInterval(pollHandle); pollHandle = null; }
-
-/* ---------- event wiring ---------- */
-document.getElementById('searchBtn').addEventListener('click', ()=> handleSearch(document.getElementById('searchInput').value));
-document.getElementById('searchInput').addEventListener('keydown', (e)=> { if (e.key === 'Enter') handleSearch(e.target.value); });
-
-document.getElementById('navBlocks').addEventListener('click', ()=>{ showSection('blocks'); loadBlocks(); });
-document.getElementById('navTx').addEventListener('click', ()=>{ showSection('tx'); });
-document.getElementById('navToken').addEventListener('click', ()=>{ showSection('token'); });
-
-document.getElementById('tokenLookup').addEventListener('click', ()=> lookupToken(document.getElementById('tokenAddr').value));
-document.getElementById('tokenBalanceBtn').addEventListener('click', ()=> {
-  const t = document.getElementById('tokenAddr').value.trim();
-  const a = document.getElementById('tokenAddressToCheck').value.trim();
-  if (!t) return alert('Enter token contract'); showToken(t);
-});
-
-/* CSV export: collect visible txs from detail or from last loaded blocks */
-document.getElementById('csvExportBtn').addEventListener('click', ()=>{
-  // try to find tx elements in detail or blocks
-  const txEls = detailEl.querySelectorAll('.tx-item .mono');
-  const rows = [];
-  if (txEls && txEls.length){
-    txEls.forEach(el=>{
-      const hash = el.textContent.trim();
-      // not all mono elements are tx hashes; we attempt best-effort
-      rows.push({hash, from:'', to:'', value:'', blockNumber:''});
-    });
-    exportTxsToCSV(rows, 'txs_export.csv');
-    alert('CSV exported (best-effort captured TX hashes)');
-    return;
-  }
-  // fallback: export recent blocks' tx counts (fast)
-  const blockRows = blocksEl.querySelectorAll('.block');
-  const rows2 = [];
-  blockRows.forEach(br => {
-    const pill = br.querySelector('.pill');
-    if (!pill) return;
-    const num = pill.textContent.replace('#','').trim();
-    rows2.push({hash:'', from:'', to:'', value:'', blockNumber:num});
-  });
-  if (rows2.length) { exportTxsToCSV(rows2, 'blocks_export.csv'); alert('Exported block list to CSV'); return; }
-  alert('Nothing visible to export');
-});
-
-/* share: use Web Share API if available, else fallback to copy page URL */
-document.getElementById('shareBtn').addEventListener('click', ()=>{
-  const url = window.location.href;
-  const title = document.title;
-  if (navigator.share){ navigator.share({title, url}).catch(()=>alert('Share cancelled')) }
-  else { navigator.clipboard.writeText(url).then(()=>alert('Link copied to clipboard')) }
-});
-
-/* navigation sections helper */
-function showSection(name){
-  document.getElementById('blocksSection').style.display = name === 'blocks' ? '' : 'none';
-  document.getElementById('txSection').style.display = name === 'tx' ? '' : 'none';
-  document.getElementById('tokenSection').style.display = name === 'token' ? '' : 'none';
-}
-
-/* mobile nav shortcuts */
-document.getElementById('mBlocks')?.addEventListener('click', ()=>{ showSection('blocks'); loadBlocks() });
-document.getElementById('mTx')?.addEventListener('click', ()=> showSection('tx'));
-document.getElementById('mTokens')?.addEventListener('click', ()=> showSection('token'));
-document.getElementById('mWallet')?.addEventListener('click', ()=> document.getElementById('connectBtn').click());
-
-/* pagination */
-document.getElementById('nextPage').addEventListener('click', async ()=>{ const candidate = Math.max(0, pageStart - PAGE_SIZE); await loadBlocks(candidate); });
-document.getElementById('prevPage').addEventListener('click', async ()=>{ const cand = Math.min(latestKnown, pageStart + PAGE_SIZE); await loadBlocks(cand); });
-
-/* popstate router */
-window.addEventListener('popstate', (ev)=>{ const s = ev.state; if (!s) return loadBlocks(); if (s.view==='block') showBlock(s.block); if (s.view==='tx') showTx(s.tx); if (s.view==='token') showToken(s.token); });
-
-/* boot sequence */
-(async function boot(){
-  try{
-    await loadBlocks();
-    const p = window.location.pathname;
-    const txm = p.match(/\/explorer\/tx\/(0x[0-9a-fA-F]{64})/);
-    const bm  = p.match(/\/explorer\/block\/(\d+)/);
-    const tm  = p.match(/\/explorer\/token\/(0x[0-9a-fA-F]{40})/);
-    if (txm) await showTx(txm[1]);
-    else if (bm) await showBlock(Number(bm[1]));
-    else if (tm) await showToken(tm[1]);
-    nodeStatusEl.innerText = 'Online';
-    startPoll();
-  }catch(e){
-    console.error('boot',e);
-    nodeStatusEl.innerText = 'Offline';
-    blocksEl.innerHTML = `<div style="color:#ff9b9b">Startup error: ${e.message}</div>`;
-  }
-   
-})();
+loadBlocks();
 </script>
 </body>
 </html>
