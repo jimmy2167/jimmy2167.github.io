@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BitSoley Learn & Earn</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'Orbitron', sans-serif;
+    }
+    body {
+      background: linear-gradient(-45deg, #00209F, #D21034, #00209F, #D21034);
+      background-size: 400% 400%;
+      animation: gradientBG 10s ease infinite;
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+    @keyframes gradientBG {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+    .container {
+      background: rgba(0,0,0,0.85);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(255,255,255,0.2);
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 1rem;
+      font-size: 2.2rem;
+    }
+    p {
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
+    }
+    button {
+      background-color: #00d084;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 10px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 1rem 0;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #00b378;
+    }
+    input[type="file"] {
+      margin-top: 1rem;
+      padding: 0.7rem;
+      width: 100%;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    #wallet-status {
+      margin-top: 1rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📘 BitSoley Learn & Earn</h1>
+    <p>Connect your Polygon wallet and upload your certificate to earn BSO tokens.</p>
+
+    <button id="connectWalletBtn">🔗 Connect Wallet</button>
+    <p id="wallet-status">Wallet not connected</p>
+
+    <form id="uploadForm">
+      <input type="file" id="certificate" accept="image/*,application/pdf" required />
+      <button type="submit">📤 Submit Certificate</button>
+    </form>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

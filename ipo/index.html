@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Basic Meta Tags -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="BitSoley - Blockchain-powered education, healthcare, and food access solutions for Haiti. Join the IPO and invest in a better future." />
+<meta name="keywords" content="BitSoley, Haiti, blockchain, IPO, education, healthcare, food security, crypto, tokens" />
+<meta name="author" content="BitSoley Team" />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:title" content="BitSoley - Empowering Haiti through Blockchain" />
+<meta property="og:description" content="Join the BitSoley IPO and invest in blockchain-powered education, healthcare, and food access solutions for Haiti." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://bitsley.com" />
+<meta property="og:image" content="https://bitsley.com/assets/images/og-image.jpg" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="BitSoley - Empowering Haiti through Blockchain" />
+<meta name="twitter:description" content="Join the BitSoley IPO and invest in blockchain-powered education, healthcare, and food access solutions for Haiti." />
+<meta name="twitter:image" content="https://bitsley.com/assets/images/og-image.jpg" />
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BitSoley IPO Launch</title>
+
+  <!-- PayPal SDK -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AVHiFb_0qQxNneo5CzYRHebHF5r_uh7y4WLKNzjqFLOWC1f-hDVG8tSTpUd9UT3qjDYqp15EVVJfOvnc&currency=USD"></script>
+
+  <!-- Web3.js for MetaMask -->
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 40px 20px 20px;
+      flex-shrink: 0;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 1.2rem;
+      max-width: 600px;
+      margin: 10px auto 30px;
+    }
+
+    .timer {
+      font-size: 1.5rem;
+      margin-bottom: 30px;
+    }
+
+    .btn, button {
+      padding: 12px 25px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn-primary {
+      background-color: #00c9a7;
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background-color: #00b297;
+    }
+
+    .btn-secondary {
+      background-color: #222;
+      color: #fff;
+      border: 1px solid #00c9a7;
+    }
+
+    .btn-secondary:hover {
+      background-color: #111;
+    }
+
+    input[type="number"] {
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      margin-bottom: 20px;
+      width: 100px;
+      text-align: center;
+    }
+
+    .paypal-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .section-links {
+      margin-top: 40px;
+    }
+
+    .section-links a {
+      display: inline-block;
+      margin: 10px;
+      padding: 10px 20px;
+      color: #00c9a7;
+      text-decoration: none;
+      border: 1px solid #00c9a7;
+      border-radius: 6px;
+      transition: 0.3s;
+    }
+
+    .section-links a:hover {
+      background: #00c9a7;
+      color: #000;
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 20px;
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+
+    #wallet-address {
+      margin-top: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #00ffb3;
+      word-break: break-all;
+    }
+
+    #token-supply {
+      margin-top: 40px;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #ffd700;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚀 BitSoley IPO Now Live</h1>
+    <p>Join our mission to bring education and healthcare to Haiti. Invest today and become a part of the future.</p>
+
+    <div class="timer">
+      IPO Ends In: <span id="countdown">Loading...</span>
+    </div>
+
+    <div>
+      <input type="number" id="donationAmount" value="20" min="1" />
+      <button class="btn btn-primary" onclick="buyTokens()">Buy with Wallet</button>
+    </div>
+
+    <button class="btn btn-secondary" id="connectWalletBtn">Connect MetaMask Wallet</button>
+    <div id="wallet-address"></div>
+
+    <div class="paypal-wrap">
+      <div id="paypal-button-container"></div>
+    </div>
+
+    <div class="section-links">
+      <a href="https://bitsoley.com">← Back to Main Site</a>
+      <a href="https://bitsoley.com/learn">📘 Learning Resources</a>
+    </div>
+
+    <div id="token-supply">Loading token supply...</div>
+  </header>
+
+  <footer>
+    &copy; 2025 BitSoley. All rights reserved.
+  </footer>
+
+  <script>
+    // Countdown - 90 days from now
+    const countdownElement = document.getElementById("countdown");
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 90);
+
+    function updateCountdown() {
+      const now = new Date().getTime();
+      const distance = futureDate - now;
+
+      if (distance < 0) {
+        countdownElement.innerHTML = "IPO Closed";
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      countdownElement.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    }
+
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+
+    // PayPal Button
+    paypal.Buttons({
+      createOrder: function(data, actions) {
+        const amount = document.getElementById("donationAmount").value || "20";
+        return actions.order.create({
+          purchase_units: [{
+            amount: {
+              value: amount
+            }
+          }]
+        });
+      },
+      onApprove: function(data, actions) {
+        return actions.order.capture().then(function(details) {
+          alert('Thank you, ' + details.payer.name.given_name + '! Your donation was successful.');
+        });
+      }
+    }).render('#paypal-button-container');
+
+    // MetaMask wallet connect
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    const walletAddressDisplay = document.getElementById('wallet-address');
+    let web3;
+
+    async function connectMetaMask() {
+      if (typeof window.ethereum === 'undefined') {
+        alert('MetaMask is not installed. Please install it to connect your wallet.');
+        return;
+      }
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const account = accounts[0];
+        walletAddressDisplay.textContent = `Connected: ${account}`;
+        connectWalletBtn.textContent = 'Wallet Connected';
+        connectWalletBtn.disabled = true;
+        web3 = new Web3(window.ethereum);
+      } catch (err) {
+        alert('Connection rejected.');
+      }
+    }
+
+    connectWalletBtn.addEventListener('click', connectMetaMask);
+
+    // Dummy buyTokens function (replace with actual contract interaction)
+    function buyTokens() {
+      if (!web3) {
+        alert('Please connect your MetaMask wallet first!');
+        return;
+      }
+      const amount = document.getElementById('donationAmount').value;
+      alert(`You want to buy ${amount} tokens. Implement contract interaction here.`);
+    }
+
+    // Token supply tracker - Replace with your real contract info
+    async function loadTokenSupply() {
+      if (typeof window.ethereum === 'undefined') {
+        document.getElementById('token-supply').textContent = "MetaMask not detected; cannot load token supply.";
+        return;
+      }
+      try {
+        const provider = window.ethereum;
+        web3 = new Web3(provider);
+
+        // Replace with your contract address
+        const contractAddress = '0x54036E5c8f96f85420dE27fBca3c6742b611109f';
+        // Minimal ERC20 ABI to get totalSupply and decimals
+        const minABI = [
+          {
+            "constant":true,
+            "inputs":[],
+            "name":"totalSupply",
+            "outputs":[{"name":"","type":"uint256"}],
+            "type":"function"
+          },
+          {
+            "constant":true,
+            "inputs":[],
+            "name":"decimals",
+            "outputs":[{"name":"","type":"uint8"}],
+            "type":"function"
+          }
+        ];
+        const contract = new web3.eth.Contract(minABI, contractAddress);
+
+        const totalSupplyRaw = await contract.methods.totalSupply().call();
+        const decimals = await contract.methods.decimals().call();
+        const totalSupply = totalSupplyRaw / (10 ** decimals);
+
+        document.getElementById('token-supply').textContent = `Total Token Supply: ${totalSupply.toLocaleString()}`;
+      } catch (error) {
+        document.getElementById('token-supply').textContent = 'Error loading token supply.';
+        console.error(error);
+      }
+    }
+
+    loadTokenSupply();
+  </script>
+  <script>
+  // Disable right-click context menu
+  document.addEventListener('contextmenu', event => event.preventDefault());
+
+  // Disable common devtools shortcuts
+  document.addEventListener('keydown', event => {
+    // F12
+    if(event.key === 'F12') event.preventDefault();
+    // Ctrl+Shift+I or Cmd+Option+I (DevTools)
+    if(event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'i')) event.preventDefault();
+    if(event.metaKey && event.altKey && (event.key === 'I' || event.key === 'i')) event.preventDefault();
+    // Ctrl+Shift+J or Cmd+Option+J (Console)
+    if(event.ctrlKey && event.shiftKey && (event.key === 'J' || event.key === 'j')) event.preventDefault();
+    if(event.metaKey && event.altKey && (event.key === 'J' || event.key === 'j')) event.preventDefault();
+    // Ctrl+U or Cmd+U (View Source)
+    if(event.ctrlKey && (event.key === 'U' || event.key === 'u')) event.preventDefault();
+    if(event.metaKey && (event.key === 'U' || event.key === 'u')) event.preventDefault();
+  });
+</script>
+
+</body>
+</html>

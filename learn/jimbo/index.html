@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Panel - BitSoley</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #111; color: #eee; }
+    h2 { margin-bottom: 20px; }
+    .card { background: #222; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+    a { color: #44aaff; }
+    button {
+      background: #00d084;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #00b378;
+    }
+    .admin-send {
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    input {
+      margin-right: 10px;
+      padding: 6px;
+      border-radius: 4px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Admin Token Transfer</h2>
+  <div class="admin-send">
+    <input type="text" id="recipient" placeholder="Recipient Address" />
+    <input type="number" id="amount" placeholder="Amount (Tokens)" />
+    <button onclick="sendTokensAsAdmin()">Send Tokens</button>
+  </div>
+
+  <h2>Pending Submissions</h2>
+  <div id="submissions">Loading...</div>
+
+  <!-- Load Web3.js -->
+  <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.7.5/dist/web3.min.js"></script>
+
+  <script>
+    // Configure Web3
+    if (typeof window.ethereum !== 'undefined') {
+      window.web3 = new Web3(window.ethereum);
+      window.ethereum.request({ method: 'eth_requestAccounts' });
+    } else {
+      alert("Please install MetaMask.");
+    }
+
+    // Token contract setup (Polygon network)
+    const contractAddress = "0x54036E5c8f96f85420dE27fBca3c6742b611109f";  // Replace with your token's address
+    const contractABI = [
+      {
+        "constant": false,
+        "inputs": [
+          { "name": "_to", "type": "address" },
+          { "name": "_value", "type": "uint256" }
+        ],
+        "name": "transfer",
+        "outputs": [{ "name": "", "type": "bool" }],
+        "type": "function"
+      }
+    ];
+    const tokenContract = new web3.eth.Contract(contractABI, contractAddress);
+
+    async function sendTokensAsAdmin() {
+      const accounts = await web3.eth.getAccounts();
+      const sender = accounts[0];
+      const recipient = document.getElementById("recipient").value;
+      const amount = document.getElementById("amount").value;
+
+      if (!web3.utils.isAddress(recipient)) {
+        alert("❌ Invalid recipient address.");
+        return;
+      }
+
+      const amountInWei = web3.utils.toWei(amount, "ether"); // adjust if token uses other decimals
+
+      try {
+        await tokenContract.methods.transfer(recipient, amountInWei).send({ from: sender });
+        alert(`✅ Sent ${amount} tokens to ${recipient}`);
+      } catch (err) {
+        console.error(err);
+        alert("❌ Failed to send tokens. Check console.");
+      }
+    }
+
+    async function loadSubmissions() {
+      const res = await fetch("pending.php");
+      const submissions = await res.json();
+
+      const container = document.getElementById("submissions");
+      container.innerHTML = "";
+
+      if (submissions.length === 0) {
+        container.innerHTML = "<p>No pending submissions.</p>";
+        return;
+      }
+
+      submissions.forEach(sub => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.setAttribute("data-id", sub.id); // Add this line
+        card.innerHTML = `
+          <p><strong>Wallet:</strong> ${sub.wallet}</p>
+          <p><strong>Submitted:</strong> ${new Date(sub.submitted_at).toLocaleString()}</p>
+          <p><strong>Certificate:</strong> <a href="../${sub.image}" target="_blank">View File</a></p>
+          <button onclick="approve('${sub.wallet}', '${sub.id}')">Approve & Send Tokens</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function approve(wallet, id) {
+  if (!confirm(`Approve and send tokens to ${wallet}?`)) return;
+
+  try {
+    // Send tokens first
+    const decimals = 18;
+    const amount = web3.utils.toBN(100).mul(web3.utils.toBN(10).pow(web3.utils.toBN(decimals))); // Adjust amount if needed
+    await contract.methods.transfer(wallet, amount.toString()).send({ from: adminAccount });
+
+    // Mark as approved in backend
+    const formData = new FormData();
+    formData.append('wallet', wallet);
+    formData.append('id', id);
+    const res = await fetch('approve.php', {
+      method: 'POST',
+      body: formData
+    });
+
+    const text = await res.text();
+    alert(`✅ Tokens sent & Approved: ${text}`);
+
+    // Instantly remove the card from the UI
+    const card = document.querySelector(`[data-id="${id}"]`);
+    if (card) card.remove();
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error sending tokens or approving.");
+  }
+}
+
+    loadSubmissions();
+  </script>
+</body>
+</html>

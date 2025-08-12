@@ -1,0 +1,117 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  color: #f0f4ff;
+  background: linear-gradient(145deg, #0b122e, #19244c);
+}
+a { text-decoration: none; }
+
+.background-overlay::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #0a0f2c, #121a40, #0f1d4a, #183663);
+  background-size: 400% 400%;
+  animation: animateBg 20s ease infinite;
+  z-index: -1;
+}
+@keyframes animateBg {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0;
+}
+.logo {
+  font-size: 1.8rem;
+  color: #6bc8ff;
+}
+#wallet-btn {
+  padding: 10px 20px;
+  background: #6bc8ff;
+  color: #0a0f2c;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+#wallet-btn:hover {
+  background: #44b4ff;
+}
+
+.hero {
+  text-align: center;
+  padding: 100px 20px;
+}
+.hero h2 {
+  font-size: 2.5rem;
+}
+.hero p {
+  font-size: 1.2rem;
+  margin-top: 20px;
+}
+.btn-group {
+  margin-top: 30px;
+}
+.btn {
+  padding: 12px 25px;
+  margin: 10px;
+  border-radius: 6px;
+  background: #6bc8ff;
+  color: #0a0f2c;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+.btn:hover {
+  background: #44b4ff;
+  transform: translateY(-2px);
+}
+.btn.ghost {
+  background: transparent;
+  border: 2px solid #6bc8ff;
+  color: #6bc8ff;
+}
+.btn.ghost:hover {
+  background: #6bc8ff;
+  color: #0a0f2c;
+}
+
+.section {
+  padding: 80px 20px;
+  text-align: center;
+}
+.section.alt {
+  background: rgba(255, 255, 255, 0.04);
+}
+.grid-3 {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  text-align: left;
+  margin-top: 40px;
+}
+.grid-3 div {
+  flex: 1 1 300px;
+  background-color: rgba(255, 255, 255, 0.06);
+  padding: 20px;
+  border-radius: 10px;
+}
+
+footer {
+  text-align: center;
+  padding: 30px 10px;
+  font-size: 0.9rem;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+footer a {
+  color: #6bc8ff;
+}
