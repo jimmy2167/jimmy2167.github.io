@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BitSoley — Empowering Haiti through Blockchain</title>
+
+  <!-- Meta -->
+  <meta name="description" content="BitSoley is a sovereign L1 powering access to education, healthcare, and food security in Haiti. Native coin: BSO (100,000,000 supply)." />
+  <meta name="keywords" content="BitSoley, BSO, Haiti, blockchain, DeFi, education, healthcare, food security" />
+  <meta name="author" content="BitSoley Team" />
+  <meta property="og:title" content="BitSoley — Empowering Haiti through Blockchain" />
+  <meta property="og:description" content="Sovereign L1 with native coin BSO. Explore, connect, and build with BitSoley." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://bitsoley.com" />
+  <meta property="og:image" content="https://bitsoley.com/assets/images/og-image.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="BitSoley — Empowering Haiti through Blockchain" />
+  <meta name="twitter:description" content="Sovereign L1 focused on real-world impact. Native coin BSO (100M)." />
+  <meta name="twitter:image" content="https://bitsoley.com/assets/images/og-image.jpg" />
+
+  <!-- External libs (CDN). Page still renders if any of these fail. -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.4/dist/web3.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+
+  <style>
+    :root{
+      --bg1:#060a1d; --bg2:#0a1238; --bg3:#0f1e55;
+      --ink:#eaf6ff; --muted:#cfe6ffcc; --line:#6bc8ff; --mint:#7df1c9;
+      --glass: rgba(255,255,255,.06);
+      --stroke: rgba(107,200,255,.14);
+      --radius: 18px;
+      --shadow: 0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Inter, Arial, "Noto Sans", sans-serif;
+      background:
+        radial-gradient(1200px 800px at 85% -10%, #2146a833 0%, transparent 60%),
+        radial-gradient(900px 600px at 10% 10%, #00e4ff12 0%, transparent 70%),
+        linear-gradient(140deg, var(--bg1), var(--bg2));
+      overflow-x:hidden;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Dynamic film layer */
+    .film:before{
+      content:""; position:fixed; inset:0; z-index:-3; pointer-events:none;
+      background: conic-gradient(from 180deg at 50% 50%, #0d183a 0deg, #132760 120deg, #0d183a 240deg, #0b1434 360deg);
+      mix-blend-mode:soft-light; opacity:.45; animation:filmSpin 32s linear infinite;
+    }
+    @keyframes filmSpin { to{ transform: rotate(1turn) } }
+
+    /* Particles */
+    #particles-js{ position:fixed; inset:0; z-index:-2; opacity:.95; pointer-events:none }
+
+    /* Glass + buttons */
+    .glass{ background: var(--glass); border:1px solid var(--stroke); border-radius: var(--radius); box-shadow: var(--shadow) }
+    .btn{
+      display:inline-flex; align-items:center; gap:.6rem; padding:.9rem 1.15rem; border-radius:14px;
+      background: linear-gradient(180deg, #87d8ff, #55b7ff); color:#04122b; font-weight:800; letter-spacing:.2px;
+      border:0; cursor:pointer; text-decoration:none; transition: transform .18s ease, box-shadow .22s ease, filter .2s ease;
+    }
+    .btn:hover{ transform: translateY(-2px); box-shadow: 0 16px 36px #1b8cff2e }
+    .btn.ghost{ background: transparent; color: var(--line); border: 1.6px solid var(--line) }
+    .btn.ghost:hover{ background:#6bc8ff14; color:#08162c }
+    .btn.subtle{ background: transparent; color: var(--ink); border:1px dashed #6bc8ff55; opacity:.9 }
+    .btn.subtle:hover{ background:#6bc8ff12; opacity:1 }
+
+    /* Header */
+    header{
+      position:sticky; top:0; z-index:40; backdrop-filter: blur(12px) saturate(1.15);
+      background: linear-gradient(180deg, #000217c8, #00021740); border-bottom: 1px solid #ffffff12;
+    }
+    .nav{
+      max-width:1240px; margin:0 auto; padding:14px 20px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .brand{ display:flex; align-items:center; gap:.8rem; font-weight:1000; letter-spacing:.2px }
+    .brand .logo{
+      width:38px; height:38px; border-radius:12px;
+      background: radial-gradient(80% 80% at 30% 25%, #ffffff 0%, #7df1c9 25%, #6bc8ff 45%, #2952ff 95%);
+      box-shadow: 0 10px 25px #1b8cff35, inset 0 1px 2px #fff3;
+      position:relative;
+    }
+    .brand span{ font-size:1.24rem }
+    .navlinks{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+    .navlinks a{ color:var(--ink); text-decoration:none; opacity:.92 }
+    .navlinks a:hover{ opacity:1; text-decoration:underline }
+
+    /* Hero */
+    .hero{
+      max-width:1240px; margin:0 auto; padding:96px 20px 40px;
+      display:grid; grid-template-columns:1.1fr .9fr; gap:36px;
+    }
+    .hero h1{
+      margin:0 0 12px; line-height:1.02;
+      font-size: clamp(2.2rem, 4.9vw, 4.2rem);
+      background: linear-gradient(90deg, #f4fbff 0%, #bde7ff 25%, #7df1c9 55%, #eaf6ff 100%);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .hero p{ color:var(--muted); font-size: clamp(1rem, 1.4vw, 1.15rem) }
+    .cta{ display:flex; flex-wrap:wrap; gap:10px; margin-top:18px }
+
+    .statbar{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; margin-top:18px }
+    .stat{ padding:14px 16px }
+    .stat h4{ margin:0 0 4px; font-size:.9rem; color:#bfe6ff }
+    .stat .v{ font-weight:900; font-size:1.1rem }
+
+    /* Content cards */
+    .cards{
+      max-width:1240px; margin:18px auto; padding:0 20px;
+      display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px;
+    }
+    .card{ padding:22px }
+    .card h3{ margin:0 0 8px }
+    .card p{ margin:0; color:var(--muted) }
+
+    .section{ max-width:1240px; margin:0 auto; padding:60px 20px }
+    .section h2{ font-size: clamp(1.6rem, 3.2vw, 2.3rem); margin:0 0 10px }
+    .sub{ color:var(--muted); margin-top:6px }
+
+    /* Roadmap timeline */
+    .timeline{ position:relative; margin-top:22px }
+    .timeline:before{
+      content:""; position:absolute; left:22px; top:0; bottom:0; width:2px;
+      background: linear-gradient(180deg, var(--line), var(--mint)); border-radius:2px; opacity:.7;
+    }
+    .mile{ position:relative; padding-left:60px; margin:26px 0 }
+    .dot{
+      position:absolute; left:13px; top:.5rem; width:20px; height:20px; border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, #fff, var(--line) 45%, #2952ff 100%);
+      box-shadow: 0 0 0 6px #6bc8ff24, 0 14px 36px #1b8cff38;
+    }
+    .mile h4{ margin:.1rem 0 .25rem; font-size:1.06rem }
+    .mile p{ margin:0; color:var(--muted) }
+
+    /* Footer */
+    footer{ border-top:1px solid #ffffff12; padding:28px 20px; text-align:center; color:#b8d7ff }
+
+    /* Mobile */
+    @media (max-width: 980px){
+      .hero{ grid-template-columns:1fr; gap:22px; padding-top:84px }
+      .cards{ grid-template-columns:1fr; gap:14px }
+      .statbar{ grid-template-columns:1fr 1fr; gap:10px }
+    }
+    @media (max-width: 540px){
+      .statbar{ grid-template-columns:1fr }
+      .nav{ padding:12px 16px }
+    }
+
+    /* Motion preferences */
+    @media (prefers-reduced-motion: reduce){
+      .film:before{ animation:none }
+    }
+  </style>
+</head>
+<body class="film">
+  <!-- Particles Background -->
+  <div id="particles-js" aria-hidden="true"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="nav">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <span>BitSoley</span>
+      </div>
+      <div class="navlinks">
+        <a href="https://bitsoley.com/explorer">Explorer</a>
+        <a href="https://wallet.bitsoley.com">Wallet</a>
+        <a class="btn subtle" href="#learn">Education</a>
+        <a class="btn subtle" href="#roadmap">Roadmap</a>
+        <button class="btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div>
+      <h1 id="title">Empowering Haiti with a Sovereign Chain.</h1>
+      <p>
+        BitSoley is a purpose-built L1 enabling access to education, healthcare, and food security.
+        It’s fast, affordable, and community-driven — with <strong>BSO</strong> as the native coin (fixed supply
+        <strong>100,000,000</strong>).
+      </p>
+      <div class="cta">
+        <a class="btn" href="https://bitsoley.com/explorer">Open Block Explorer</a>
+        <a class="btn ghost" href="https://wallet.bitsoley.com">Open BitSoley Wallet</a>
+        <button class="btn" onclick="addBitSoleyNetwork()">Add BitSoley Network</button>
+      </div>
+
+      <!-- Live network snapshot -->
+      <div class="statbar">
+        <div class="glass stat">
+          <h4>RPC Latency</h4><div class="v" id="latency">—</div>
+        </div>
+        <div class="glass stat">
+          <h4>Latest Block</h4><div class="v" id="latestBlock">—</div>
+        </div>
+        <div class="glass stat">
+          <h4>Peers</h4><div class="v" id="peers">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right visual -->
+    <div class="glass" style="min-height:380px; display:grid; place-items:center; position:relative; overflow:hidden">
+      <div id="orb" style="width:260px; height:260px; border-radius:50%;
+        background: radial-gradient(58% 58% at 40% 30%, #ffffff 0%, #7df1c9 15%, #6bc8ff 35%, #2952ff 90%);
+        box-shadow: 0 40px 120px #1b8cff44, inset 0 2px 10px #ffffffaa;">
+      </div>
+      <div style="position:absolute; bottom:12px; left:12px; right:12px; opacity:.9; font-size:.92rem; color:#cfe6ff">
+        Sovereign • Affordable • Ethereum-compatible • Built for real-world impact
+      </div>
+    </div>
+  </section>
+
+  <!-- Pillars -->
+  <section class="cards" id="pillars">
+    <div class="glass card">
+      <h3>Education</h3>
+      <p>Earn opportunities, not just certificates. On-chain credentials and learn-to-earn incentives for Haitian learners.</p>
+    </div>
+    <div class="glass card">
+      <h3>Healthcare</h3>
+      <p>Transparent funding and tamper-evident records enable clinics and community care where it’s needed most.</p>
+    </div>
+    <div class="glass card">
+      <h3>Food & Agriculture</h3>
+      <p>Traceability and micro-finance for smallholders strengthen local food systems and resilience.</p>
+    </div>
+  </section>
+
+  <!-- Learn & Earn -->
+  <section class="section" id="learn">
+    <h2>Learn & Earn</h2>
+    <p class="sub">
+      Complete courses from MITx, edX, Coursera and more. Submit proof, level up skills, and engage the BitSoley ecosystem.
+    </p>
+    <div class="cards" style="grid-template-columns:repeat(3, minmax(0,1fr))">
+      <a class="glass card" href="https://mitxonline.mit.edu/courses/course-v1:MITxT+7.06.1x/">
+        <h3>Biology</h3><p>Foundations for public health & biosciences.</p>
+      </a>
+      <a class="glass card" href="https://www.edx.org/learn/agriculture">
+        <h3>Agriculture</h3><p>Build sustainable food systems for communities.</p>
+      </a>
+      <a class="glass card" href="https://www.edx.org/certificates/professional-certificate/ibm-information-technology-support">
+        <h3>IT & Cybersecurity</h3><p>Digital skills for a modern, resilient economy.</p>
+      </a>
+    </div>
+    <div style="display:flex; justify-content:center; margin-top:14px">
+      <a class="btn ghost" href="https://bitsoley.com/learn">Get Rewarded for Learning</a>
+    </div>
+  </section>
+
+  <!-- Roadmap -->
+  <section class="section" id="roadmap">
+    <h2>Roadmap — BSO (Total Supply: 100,000,000)</h2>
+    <p class="sub">The plan for a resilient, people-first network. Timelines adapt as we prioritize impact and security.</p>
+    <div class="timeline">
+      <div class="mile glass">
+        <div class="dot" aria-hidden="true"></div>
+        <h4>Q3 2025 — Network Launch</h4>
+        <p>Mainnet validators, secure RPC (<code>rpc.bitsoley.com</code>), explorer, wallet app, chain parameters finalized.</p>
+      </div>
+      <div class="mile glass">
+        <div class="dot"></div>
+        <h4>Q4 2025 — Developer Onboarding</h4>
+        <p>One-click add network, faucet for builders, SDKs, grants for education & health pilots, community governance groundwork.</p>
+      </div>
+      <div class="mile glass">
+        <div class="dot"></div>
+        <h4>Q1 2026 — Security & Staking</h4>
+        <p>Audits, validator expansion, light client, state sync & snapshot tooling.</p>
+      </div>
+      <div class="mile glass">
+        <div class="dot"></div>
+        <h4>Q2 2026 — Real-World Integrations</h4>
+        <p>On-chain credentials, clinic funding rails, agricultural traceability, NGO partnerships, mobile-first UX.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    © <span id="year"></span> BitSoley. All Rights Reserved. &nbsp;•&nbsp;
+    <a href="https://bitsoley.com/explorer" style="color:#9fdcff">Explorer</a> &nbsp;•&nbsp;
+    <a href="https://wallet.bitsoley.com" style="color:#9fdcff">Wallet</a>
+  </footer>
+
+  <script>
+    /* =========================
+       Core config
+       ========================= */
+    const RPC_URL = 'https://rpc.bitsoley.com';
+    const EXPLORER_URL = 'https://bitsoley.com/explorer';
+    const CHAIN_PARAMS = {
+      chainId: '0x34e91', // 216721 in hex
+      chainName: 'BitSoley',
+      nativeCurrency: { name: 'BitSoley', symbol: 'BSO', decimals: 18 },
+      rpcUrls: [RPC_URL],
+      blockExplorerUrls: [EXPLORER_URL]
+    };
+
+    /* =========================
+       Utilities
+       ========================= */
+    const qs = (sel) => document.querySelector(sel);
+    const yearEl = qs('#year'); if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+    /* =========================
+       Particles (mobile-aware)
+       ========================= */
+    function initParticles(){
+      const isMobile = matchMedia('(max-width: 540px)').matches;
+      const count = isMobile ? 56 : 125;
+      const speed = isMobile ? 2.1 : 3.9;
+      if (!window.particlesJS) return;
+      particlesJS('particles-js',{
+        particles:{
+          number:{ value: count, density:{ enable:true, value_area:800 }},
+          color:{ value:'#6bc8ff' }, shape:{ type:'circle' },
+          opacity:{ value:.55 }, size:{ value:3, random:true },
+          line_linked:{ enable:true, distance:150, color:'#6bc8ff', opacity:.32, width:1 },
+          move:{ enable:true, speed: speed, out_mode:'out' }
+        },
+        interactivity:{
+          detect_on:'canvas',
+          events:{ onhover:{ enable:true, mode:'grab' }, onclick:{ enable:true, mode:'push' }, resize:true },
+          modes:{ grab:{ distance:140, line_linked:{ opacity:.7 }}, push:{ particles_nb: 4 } }
+        },
+        retina_detect:true
+      });
+    }
+
+    /* =========================
+       GSAP animations
+       ========================= */
+    function initGSAP(){
+      if (!window.gsap || !window.ScrollTrigger) return;
+      gsap.registerPlugin(ScrollTrigger);
+      gsap.from('#title',{ y:26, opacity:0, duration:1.0, ease:'power3.out' });
+      gsap.to('#orb',{ y:12, duration:2.6, repeat:-1, yoyo:true, ease:'sine.inOut' });
+
+      const cards = document.querySelectorAll('.card, .mile, .stat');
+      cards.forEach((el, i)=>{
+        gsap.from(el, {
+          opacity: 0, y: 20, duration: .7, ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 85%' },
+          delay: (i % 6) * 0.03
+        });
+      });
+    }
+
+    /* =========================
+       Wallet actions
+       ========================= */
+    async function connectWallet(){
+      const btn = document.getElementById('connectBtn');
+      try{
+        if(!window.ethereum){ alert('Please install MetaMask or another Web3 wallet.'); return; }
+        const accounts = await window.ethereum.request({ method:'eth_requestAccounts' });
+        if(accounts && accounts[0]){
+          const a = accounts[0];
+          btn.textContent = a.slice(0,6)+'…'+a.slice(-4);
+          btn.disabled = true; btn.style.cursor='default';
+        }
+      }catch(e){ console.error('connectWallet', e); }
+    }
+
+    async function addBitSoleyNetwork(){
+      try{
+        if(!window.ethereum){ alert('Please install MetaMask or another Web3 wallet.'); return; }
+        await window.ethereum.request({ method:'wallet_addEthereumChain', params:[CHAIN_PARAMS] });
+      }catch(e){
+        console.error('wallet_addEthereumChain', e);
+        alert('Could not add the BitSoley network. Check chainId/RPC and try again.');
+      }
+    }
+
+    /* =========================
+       Lightweight RPC health
+       ========================= */
+    async function pingRPC(){
+      const latencyEl = document.getElementById('latency');
+      const blockEl   = document.getElementById('latestBlock');
+      const peersEl   = document.getElementById('peers');
+      const payload = (method, params=[]) => ({ jsonrpc:'2.0', id: Math.floor(Math.random()*1e6), method, params });
+
+      const t0 = performance.now();
+      try{
+        const res = await fetch(RPC_URL, {
+          method:'POST', headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(payload('eth_blockNumber'))
+        });
+        const t1 = performance.now();
+        latencyEl.textContent = Math.max(1, Math.round(t1 - t0)) + ' ms';
+        const json = await res.json();
+        if(json && json.result){
+          const n = parseInt(json.result, 16);
+          blockEl.textContent = isNaN(n) ? '—' : n.toLocaleString();
+        }else blockEl.textContent = '—';
+      }catch(e){
+        latencyEl.textContent = 'offline';
+        blockEl.textContent = '—';
+      }
+
+      // Peer count (may be disabled on some RPCs)
+      try{
+        const res2 = await fetch(RPC_URL, {
+          method:'POST', headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(payload('net_peerCount'))
+        });
+        const json2 = await res2.json();
+        if(json2 && json2.result){
+          const peers = parseInt(json2.result, 16);
+          peersEl.textContent = isNaN(peers) ? '—' : peers;
+        }else peersEl.textContent = '—';
+      }catch(e){ peersEl.textContent = '—'; }
+    }
+
+    /* =========================
+       Boot
+       ========================= */
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initParticles();
+      initGSAP();
+      pingRPC();
+      setInterval(pingRPC, 12000);
+    });
+
+    // Respect reduced motion users
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches){
+      window.addEventListener('load', ()=>{
+        const orb = document.getElementById('orb');
+        if(orb) orb.style.transition = 'none';
+      });
+    }
+  </script>
+</body>
+</html>
