@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BitSoley DEX Pro</title>
+
+<!-- TailwindCSS for layout & styling -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Ethers.js for blockchain interaction -->
+<script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+body { font-family: 'Inter', sans-serif; margin:0; padding:0; background: radial-gradient(circle at top left, #0d0d1a, #1b1b2f); color: #c0c0ff; }
+h1,h2,h3 { font-family: 'Orbitron', sans-serif; }
+.glass { backdrop-filter: blur(14px); background: rgba(255,255,255,0.03); border-radius: 20px; padding: 2rem; box-shadow: 0 0 40px rgba(0, 230, 255,0.2); transition: all 0.3s ease; }
+.glass:hover { box-shadow: 0 0 60px rgba(0, 230, 255,0.4); }
+button { font-weight: 700; transition: all 0.3s ease; }
+button:hover { transform: scale(1.05); box-shadow: 0 0 20px #00e6ff; }
+input { background: rgba(255,255,255,0.05); border: 1px solid #00e6ff33; color: #fff; padding: 0.5rem 1rem; border-radius: 12px; outline: none; width: 100%; }
+input:focus { border-color: #00e6ff; box-shadow: 0 0 15px #00e6ff; }
+.section-title { color: #00e6ff; font-size: 1.8rem; font-weight: 700; margin-bottom: 1rem; }
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+th, td { border-bottom: 1px solid #00e6ff33; padding: 0.75rem; text-align: center; font-size: 0.95rem; }
+th { color: #00e6ff; }
+tbody tr:nth-child(even){ background: rgba(255,255,255,0.02); }
+</style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-12 gap-8">
+
+<header class="w-full text-center mb-8">
+  <h1 class="text-6xl font-bold text-cyan-400 mb-2">BitSoley DEX</h1>
+  <p class="text-cyan-200 text-lg"> Multi-Token Swap & Liquidity Dashboard</p>
+</header>
+
+<main class="w-full max-w-7xl flex flex-col gap-8">
+
+  <!-- Wallet Connect -->
+  <div class="glass flex flex-col items-center p-6">
+    <button id="connectWalletBtn" class="px-10 py-3 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-xl text-xl font-bold">Connect Wallet</button>
+    <p class="mt-3">Connected: <span id="walletAddress" class="font-mono text-cyan-300">Not connected</span></p>
+    <p>Balance <span id="balanceTokens">-</span></p>
+  </div>
+
+  <!-- Swap Panel -->
+  <div class="glass p-6 flex flex-col gap-4">
+    <h2 class="section-title">Swap Tokens</h2>
+    <div class="flex flex-col md:flex-row gap-4">
+      <input type="number" id="swapAmount" placeholder="Amount to swap" />
+      <select id="swapFromToken" class="bg-black text-white rounded px-3 py-2 w-full md:w-auto"></select>
+      <select id="swapToToken" class="bg-black text-white rounded px-3 py-2 w-full md:w-auto"></select>
+    </div>
+    <button id="swapBtn" class="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 rounded-xl font-bold">Swap</button>
+  </div>
+
+  <!-- Liquidity Panel -->
+  <div class="glass p-6 flex flex-col gap-4">
+    <h2 class="section-title">Manage Liquidity</h2>
+    <div class="flex flex-col md:flex-row gap-4">
+      <select id="liquidityTokenA" class="bg-black text-white rounded px-3 py-2 w-full md:w-auto"></select>
+      <input type="number" id="liquidityAmountA" placeholder="Amount Token A" />
+      <select id="liquidityTokenB" class="bg-black text-white rounded px-3 py-2 w-full md:w-auto"></select>
+      <input type="number" id="liquidityAmountB" placeholder="Amount Token B" />
+    </div>
+    <div class="flex gap-4 mt-2">
+      <button id="addLiquidityBtn" class="bg-green-500 px-6 py-3 rounded-xl font-bold">Add Liquidity</button>
+      <button id="removeLiquidityBtn" class="bg-red-500 px-6 py-3 rounded-xl font-bold">Remove Liquidity</button>
+    </div>
+  </div>
+
+  <!-- Pools & Trades -->
+  <div class="glass p-6 flex flex-col gap-4 overflow-x-auto">
+    <h2 class="section-title">Pools & Trade Activity</h2>
+    <table id="tradesTable">
+      <thead>
+        <tr>
+          <th>Tx Hash</th>
+          <th>Type</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Amount</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Status -->
+  <div class="glass p-6 flex flex-col gap-2">
+    <h2 class="section-title">Status</h2>
+    <div id="status" class="font-mono text-sm text-cyan-100">Awaiting actions...</div>
+  </div>
+
+</main>
+
+<!-- Config & ABIs -->
+<script src="config.js"></script>
+<script src="DemoUSD_ABI.js"></script>
+<script src="WBSO_ABI.js"></script>
+<script src="Router_ABI.js"></script>
+
+<script>
+// --- Wallet & Provider ---
+let provider, signer;
+let tokensList = []; // {symbol,address,abi}
+
+async function connectWallet() {
+  if(!window.ethereum) return alert("MetaMask not found!");
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer = provider.getSigner();
+    const addr = await signer.getAddress();
+    document.getElementById("walletAddress").innerText = addr;
+    updateStatus("Wallet connected.");
+    await loadTokens();
+    updateBalances();
+  } catch(e){ console.error(e); updateStatus("Connection failed"); }
+}
+
+// --- Load tokens dynamically ---
+async function loadTokens(){
+  // Example tokens, you can add more or fetch from your chain dynamically
+  tokensList = [
+    {symbol:'BSO', address:CONFIG.WBSO_ADDRESS, abi: WBSO_ABI},
+    {symbol:'DemoUSD', address:CONFIG.TOKEN_ADDRESS, abi: DemoUSD_ABI},
+    // Add more tokens here if needed
+  ];
+  const swapFrom = document.getElementById("swapFromToken");
+  const swapTo = document.getElementById("swapToToken");
+  const liqA = document.getElementById("liquidityTokenA");
+  const liqB = document.getElementById("liquidityTokenB");
+  [swapFrom,swapTo,liqA,liqB].forEach(sel => {
+    sel.innerHTML = '';
+    tokensList.forEach(t => { sel.innerHTML += `<option value="${t.address}">${t.symbol}</option>` });
+  });
+}
+
+// --- Update balances ---
+async function updateBalances(){
+  const balances = await Promise.all(tokensList.map(async t=>{
+    const contract = new ethers.Contract(t.address,t.abi,signer);
+    const bal = await contract.balanceOf(await signer.getAddress());
+    return `${t.symbol}: ${ethers.utils.formatUnits(bal,18)}`;
+  }));
+  document.getElementById("balanceTokens").innerText = balances.join(' | ');
+}
+
+// --- Status helper ---
+function updateStatus(msg){ document.getElementById("status").innerText = msg; }
+
+// --- Swap Function ---
+async function swapTokens(){
+  try{
+    const amount = document.getElementById("swapAmount").value;
+    const fromAddr = document.getElementById("swapFromToken").value;
+    const toAddr = document.getElementById("swapToToken").value;
+    const router = new ethers.Contract(CONFIG.ROUTER_ADDRESS, Router_ABI, signer);
+    const parsedAmount = ethers.utils.parseUnits(amount,18);
+    // Approve first if needed
+    const fromToken = new ethers.Contract(fromAddr,tokensList.find(t=>t.address===fromAddr).abi,signer);
+    const allowance = await fromToken.allowance(await signer.getAddress(),CONFIG.ROUTER_ADDRESS);
+    if(allowance.lt(parsedAmount)){ await fromToken.approve(CONFIG.ROUTER_ADDRESS,ethers.constants.MaxUint256); }
+    // Swap via router
+    const tx = await router.swapExactTokensForTokens(parsedAmount,0,[fromAddr,toAddr],await signer.getAddress(),Math.floor(Date.now()/1000)+60*10);
+    updateStatus(`Swap submitted: ${tx.hash}`);
+    await tx.wait();
+    updateStatus(`Swap completed: ${tx.hash}`);
+    updateBalances();
+    loadRecentTrades();
+  }catch(e){ console.error(e); updateStatus("Swap failed: "+e.message); }
+}
+
+// --- Add Liquidity ---
+async function addLiquidity(){
+  try{
+    const tokenA = document.getElementById("liquidityTokenA").value;
+    const tokenB = document.getElementById("liquidityTokenB").value;
+    const amountA = ethers.utils.parseUnits(document.getElementById("liquidityAmountA").value,18);
+    const amountB = ethers.utils.parseUnits(document.getElementById("liquidityAmountB").value,18);
+    const router = new ethers.Contract(CONFIG.ROUTER_ADDRESS, Router_ABI, signer);
+    const contractA = new ethers.Contract(tokenA,tokensList.find(t=>t.address===tokenA).abi,signer);
+    const contractB = new ethers.Contract(tokenB,tokensList.find(t=>t.address===tokenB).abi,signer);
+    if((await contractA.allowance(await signer.getAddress(),CONFIG.ROUTER_ADDRESS)).lt(amountA)) await contractA.approve(CONFIG.ROUTER_ADDRESS,ethers.constants.MaxUint256);
+    if((await contractB.allowance(await signer.getAddress(),CONFIG.ROUTER_ADDRESS)).lt(amountB)) await contractB.approve(CONFIG.ROUTER_ADDRESS,ethers.constants.MaxUint256);
+    const tx = await router.addLiquidity(tokenA,tokenB,amountA,amountB,0,0,await signer.getAddress(),Math.floor(Date.now()/1000)+60*10);
+    updateStatus(`Liquidity tx: ${tx.hash}`);
+    await tx.wait();
+    updateStatus(`Liquidity added successfully`);
+    updateBalances();
+  }catch(e){ console.error(e); updateStatus("Add liquidity failed: "+e.message); }
+}
+
+// --- Remove Liquidity ---
+async function removeLiquidity(){ updateStatus("Remove liquidity coming soon"); }
+
+// --- Real-time Trades (basic polling example) ---
+async function loadRecentTrades(){
+  const router = new ethers.Contract(CONFIG.ROUTER_ADDRESS, Router_ABI, signer);
+  const events = await router.queryFilter(router.filters.Swap(),Math.max(0,(await provider.getBlockNumber())-1000));
+  const tbody = document.querySelector("#tradesTable tbody");
+  tbody.innerHTML='';
+  events.reverse().forEach(ev=>{
+    const from = ev.args.from;
+    const to = ev.args.to;
+    const amount = ethers.utils.formatUnits(ev.args.amountIn,18);
+    const hash = ev.transactionHash;
+    const t = new Date().toLocaleTimeString();
+    tbody.innerHTML += `<tr><td>${hash.slice(0,8)}...</td><td>Swap</td><td>${from.slice(0,6)}...</td><td>${to.slice(0,6)}...</td><td>${amount}</td><td>${t}</td></tr>`;
+  });
+}
+
+// --- Event Listeners ---
+window.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("connectWalletBtn").onclick = connectWallet;
+  document.getElementById("swapBtn").onclick = swapTokens;
+  document.getElementById("addLiquidityBtn").onclick = addLiquidity;
+  document.getElementById("removeLiquidityBtn").onclick = removeLiquidity;
+  setInterval(loadRecentTrades,10000); // refresh trades every 10s
+});
+</script>
+
+</body>
+</html>
